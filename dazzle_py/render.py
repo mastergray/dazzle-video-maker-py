@@ -240,7 +240,9 @@ def main():
     p.add_argument('--switch-every', type=float, default=6.0,
                    help='seconds between effect switches (default 6.0)')
     p.add_argument('--effects', nargs='+', default=None,
-                   help='restrict rotation to these effect names')
+                   help='restrict rotation to these effect names (see --list-effects)')
+    p.add_argument('--list-effects', action='store_true',
+                   help='print all available effect names and exit')
     p.add_argument('--crf', type=int, default=23,
                    help='H.264 quality (18=near-lossless, 23=default, 28=smaller). default 23')
     p.add_argument('--analysis', default=None,
@@ -262,6 +264,22 @@ def main():
     p.add_argument('--unique', action='store_true',
                    help='guarantee no effect from the previous scene appears in the next (equivalent to --max-overlap 0)')
     args = p.parse_args()
+
+    if args.list_effects:
+        for name in sorted(REGISTRY.keys()):
+            print(name)
+        return
+
+    if args.effects:
+        unknown = [e for e in args.effects if e not in REGISTRY]
+        if unknown:
+            valid = ', '.join(sorted(REGISTRY.keys()))
+            p.error(f"unknown effect name(s): {', '.join(unknown)}\n  valid: {valid}")
+        if args.mode == 'overlay' and len(args.effects) < args.overlay_min:
+            print(f'warning: --effects has {len(args.effects)} names but --overlay-min is '
+                  f'{args.overlay_min}; scenes will be capped to {len(args.effects)} effects',
+                  file=sys.stderr)
+
     max_overlap = 0 if args.unique else args.max_overlap
     render(args.audio, args.output,
            scale=args.scale, fps=args.fps, seed=args.seed,
