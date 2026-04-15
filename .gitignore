@@ -2,6 +2,10 @@
 dazzle_py/test/*.mp4
 dazzle_py/test/*.mkv
 dazzle_py/test/*.webm
+dazzle_py/test/*.profile.json
+
+# Effects guide output — regeneratable via build_effects_guide.py
+effects-guide/
 
 # Python bytecode
 __pycache__/
