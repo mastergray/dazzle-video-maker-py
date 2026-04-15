@@ -1,0 +1,87 @@
+{
+  "source": {
+    "binary": "Dazzle 4.0/DAZZLE.EXE (dated 1990-09-04, Borland C++)",
+    "size_bytes": 175731,
+    "packed": false,
+    "decompiled": "decompiled-v40/dazzle_v40_decompiled.c",
+    "function_count": 297,
+    "decompile_failures": 0
+  },
+
+  "license": {
+    "status": "executable released to Public Domain",
+    "source_text": "DAZZLE.DOC line 318: 'this program is released in executable form to the Public Domain'",
+    "caveats": [
+      "Commercial rights retained by author (J.R.Shiflett / MicroTronics)",
+      "Original executable must not be altered for redistribution — but this does not restrict reimplementation from scratch"
+    ],
+    "port_recommendation": "Use 4.0 as the reference for algorithm behavior. A Python port that re-implements the visible effects is clearly derivative but not a copy of the executable."
+  },
+
+  "runtime_architecture": {
+    "video_mode": "VGA 0xA000:0 confirmed at FUN_1dac_2731 call site (line 21615)",
+    "code_segments": ["0x1dac", "0x2482", "0x2b58", "0x34d4", "0x3734"],
+    "main_dispatcher": "switchD_2000:d4dd — Ghidra recovered switch-case structure (unlike 5.0 which needed a jump-table walk)",
+    "notes": "Proper MZ loader gave Ghidra segment relocations, so switch-case and string references were auto-recovered."
+  },
+
+  "effects": {
+    "count": 32,
+    "categorization": "4.0 has only shape generators — no separate effect_modes category like 5.0 added later.",
+    "string_table_offset": "0x28890",
+    "names": [
+      "atom", "bars", "boxes", "curves",
+      "diag1", "diag2", "diag3", "diag4",
+      "ellipse", "formula1", "grid", "hexagon",
+      "lines", "lotsadots", "lotsadots2",
+      "pedals", "puffs", "ribbons",
+      "triangles", "tunnel",
+      "sierpinski", "sine",
+      "spiral", "spiral1",
+      "squares", "streamer",
+      "sweep", "sweep2", "sweep3",
+      "wandering", "zigstream", "zigzags"
+    ]
+  },
+
+  "effect_differences_vs_5_0": {
+    "only_in_4_0": ["diag3", "diag4", "lotsadots2", "streamer", "sweep3", "zigzags"],
+    "added_in_5_0_shapes": [
+      "balls", "bigstar", "cones", "corkscrew", "cycloids", "daisies",
+      "hilbert", "littleStars", "squirals", "butterflies",
+      "diamonds", "gumballs", "tiles", "wedges", "yarnball"
+    ],
+    "added_in_5_0_effect_modes": [
+      "rAndomize", "Blister", "Countdown", "Drip", "Exclusive-or",
+      "Firefly", "Gas cloud", "spIral", "Juggle palette", "Kleenup",
+      "Linewipe", "Mesh", "firewOrks", "Pan/scroll", "Quilt",
+      "Rectangles", "Starburst", "Twist", "Umbra", "moVingbars",
+      "Wipe", "heXagon", "tetrYs", "Ziti"
+    ]
+  },
+
+  "port_plan_for_4_0": {
+    "approach": "Re-implement each of the 32 shape algorithms in Python as a pure function mapping (frame_index, params, audio_features) to a 320x200 paletted buffer.",
+    "simplest_first": [
+      "lines, diag1..4, zigzags — trivial line-drawing, good for pipeline validation",
+      "wandering — random walk, <20 lines",
+      "sierpinski — chaos game, classic algorithm",
+      "spiral / spiral1 — archimedean/logarithmic parametric",
+      "lotsadots — random pixel scatter"
+    ],
+    "harder": [
+      "hexagon, tunnel — geometric transforms",
+      "sweep variants — rotating radial with palette cycling interaction",
+      "formula1 — generic parametric evaluator",
+      "streamer — likely a connected polyline particle trail",
+      "atom — multi-orbit parametric"
+    ],
+    "audio_reactivity_axes": {
+      "particle_count": "lotsadots, pedals, puffs",
+      "rotation_speed": "sweep, sweep2, sweep3, spiral",
+      "radius_amplitude": "atom, ellipse, circles",
+      "branch_depth": "sierpinski (chaos-game iterations per frame)",
+      "palette_cycle_rate": "all effects — hook to overall RMS energy"
+    }
+  }
+}

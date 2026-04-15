@@ -1,0 +1,338 @@
+
+DAZZLE :             Documentation for Revision 4.0
+                            4 September 1990
+
+
+       A randomized color pattern generator for MsDOS/PCDOS computers
+with EGA or VGA compatible color displays and adapters.  Performance art
+for the eyes!
+
+       A source of beauty, sometimes subtle, sometimes vibrant, always
+changing.  The image engine has over 30 primary drawing algorithms, most
+of which have at least two styles of presentation, many of which have
+multiple internal drawing variations.  There are also an assortment of
+"fades", including split screens and pans, used by the imaging system
+for greater diversity of presentation.  The entire color range of the
+detected video system is utilized for maximum variety and visual
+stimulation.  The primary algorithms are mixed randomly on the screen,
+typically from 3 to 8 are overlaid at a time producing a very large
+assortment of possible displays.  Each display remains for a while to be
+appreciated, then the screen is cleared via one of the fade algorithms
+and another set of patterns is presented.  Mathematically speaking, an
+exact pattern match might not occur for many days of continuous
+operation.  Of course human perception is far less exacting and will
+discern repetition well ahead of these extremes, but the general effect
+is still impressive.  Note that the starting patterns of the program
+will be different each time it is executed, if it seems predictable then
+exit it and start it over again.
+
+       The July 1990 issue of "PsL News" (713-524-6394) described this
+program as:
+               ...the best kaleidoscope program we've seen yet.
+               The beautiful use of colors, enhanced even
+               further by the use of fading in and out, is, for
+               want of a better word, awesome.
+
+       Dazzle can be used in a variety of ways.  At the office it keeps
+the screen from being burned by constant display of an unchanging
+prompt.  Simply activate the program when leaving your desk or answering
+the phone or otherwise diverted.  One option is to activate Dazzle from
+a keyboard-locking program so that unauthorized access is prevented on
+your un-attended computer until you return.  In reception areas, at
+trade shows, and other events where the desire is to attract attention,
+use one of the faster cycling modes of Dazzle to peak curiosity and draw
+visitors to your area.  DAZZLE can be invoked from within your own
+presentation software for an extra touch of piazzas.
+
+       Dazzle can be used to aid relaxation.  In its slower cycling VGA
+modes it is often soothing and helps one to shift conscious attention
+from the cares of the day.  When overwhelmed with problems or pressures,
+it is often true that shifting one's focus from an immediate concern
+provides the objectivity needed to enhance decision making and settle
+the nerves.  Used in conjunction with your favorite music, Dazzle can be
+highly entertaining and regenerating.
+
+
+DAZZLE Revision 4.0                    page 1 of 6
+Program, including source, and all related documentation Copyright
+
+       DAZZLE is a performing art tool for the eyes.  The MIDI control
+and full manual image control options have not yet been implemented, but
+even in its current random play mode it is great 'living' mobile art.
+Capture stills, record it on your VCR, or play it live with your band.
+Applications are boundless.
+
+
+Usage: DAZZLE [- options] [/ options]
+       -c = COMPATIBLE mode, use BIOS for better portability.
+       -2 = 2 part palette update to fix flickering screens (slower).
+       -n = NO retract of hard disk heads.
+       -x = XT compatible mode, inferior but works.
+       -s = SHOW mode, quick single image.
+       -e = EGA operation mode forced.
+       -v = VGA operation mode forced.
+       -t = TALL video aspect ratio mode.
+       -f = FIXED colors instead of randomized.
+       -a = ALTERNATE (faster) color cycling speed.
+       -m = MAD (fastest) color cycling speed.
+       -b = Bashful, no closing credits.
+ During the display the '+' and '-' keys can be used to control color
+cycling speed!  The TAB key will FREEZE the display till the next key!
+
+
+       The DAZZLE program accepts any combination of options on the
+initial command line that affect it's mode of operation.  The options
+can be preceded with either the "/" character or the "-" character. At
+least one space must exist between the DAZZLE command and the first
+option.  For example: "DAZZLE -FN" instructs DAZZLE to execute with
+Fixed colors and No retract of the hard disk drive heads.  The options
+are not case sensitive (upper and lower case letters are treated
+identically). The options can be concatenated into a single string
+(like: -FN), or can be entered separately (like: -F -N), the effect is
+the same.  To get a list of legal options use either the "-?" option
+(DAZZLE -?) or the question mark alone (DAZZLE ?).  The effects of each
+option are detailed below.
+
+       Six of the options for DAZZLE are specifically related to
+increasing portability of the program to various computers and displays.
+The "c", "2", "n", "x", "e", and "v" options default to the most
+desirable modes, but can be controlled by the user.  VGA users should
+also refer to the "t" option for details.
+
+/C = COMPATIBLE mode, use BIOS for better portability.
+       Normally DAZZLE bypasses the video adapters BIOS code for maximum
+speed in color palette cycling.  However, some adapters can have
+problems with this mode of operation.  To cause DAZZLE to use the
+provided BIOS the "C" option can be used.  If your display flickers,
+distorts, or the color fails to cycle smoothly during the display then
+try this option to determine if it corrects the problem.  As of Rev.
+3.9g this option also impacts the EGA operational mode, this was needed
+by some VGA adapters when DAZZLE was operated in the forced EGA mode.
+This option reduces program performance speed and should not be used if
+
+DAZZLE Revision 4.0                    page 2 of 6
+Program, including source, and all related documentation Copyright
+
+not needed.
+
+/2 = 2 part palette update to fix flickering screens (slower).
+       Normally the entire color palette is updated at one time for each
+tick of the color cycling clock.  If the CPU clock speed or the VGA
+palette register update rate are too slow, the upper part, or perhaps
+all of the display, will flicker badly during the display.  To determine
+if this is due to palette updates, press and hold the "-" key during the
+running display until it beeps (this is the slowest cycling clock rate).
+If the display only flickers when the color changes, then palette update
+speed is a problem.  Using the "2" option splits the VGA palette update
+request into two almost equal groups that are handled sequentially. This
+should remove, or at least significantly reduce, cycling induced
+flicker.  This option should not be used if not needed as it slows the
+entire display generation process.  This option only affects operation
+with VGA adapters since they allow longer 256 color palettes.  Short 16
+color palettes for EGA's are never divided into two separate updates.
+
+/N = NO retract of hard disk heads.
+       Since the DAZZLE display is often allowed to run for hours, the
+hard disk heads are normally parked into a safe power-down position as a
+precaution in case electrical power is lost, or the computer powered-
+down while DAZZLE is active.  This process has no effect on the image
+generation performance of DAZZLE, but if your drive controller is highly
+non-standard it might cause DAZZLE to fail to start.  The user can issue
+this option to prevent any attempt to park the hard disk heads.
+
+/X = XT compatible mode, inferior but works.
+       This option should allow DAZZLE to execute on 8088 or 8086 based
+XT type computers with EGA or VGA adaptors.  This option will be
+automatically initiated if the 808x style CPU is detected at program
+startup, but specifying the command line option avoids the warning
+message.  The EGA performance on XT computers seems acceptable, but the
+VGA mode may be noticeably inferior to the performance of an 80x86 based
+computer.  The faster the CPU clock the better the overall performance
+and fluidity of DAZZLE.
+
+
+       The remainder of the DAZZLE options adjust the image generating
+algorithms used by the program.  They are largely artistic in nature but
+allow customizing the presentation to various environments and
+requirements.
+
+/S = SHOW mode, quick single image.
+       This option gives a quick single panel of images and then
+terminates automatically.  This is most useful when DAZZLE is to be
+executed from other programs or batch files.  As of rev 4.0 the image
+displayed is NOT the same one each time, this now allows normal
+randomization of the program.
+
+/E = EGA operation mode forced.
+       Normally DAZZLE will automatically detect the video adapter
+hardware attached and adjust itself to utilize the maximum resources
+
+DAZZLE Revision 4.0                    page 3 of 6
+Program, including source, and all related documentation Copyright
+
+available.  If a VGA style adapter is detected then the display uses all
+256 color palette registers for a far more subtle and interesting series
+of displays.  This /E option allows VGA users to select and view the EGA
+mode of operation.  NOTE: If VGA users wish to use an 'image capture'
+type of program to extract the display into a file you must use either
+the /E option or the /T option since these modes use standard BIOS
+supported video modes.  The default VGA mode of DAZZLE uses a specially
+enhanced 320x400x256 mode that has yet to be successfully captured by
+any commercial product.  As of rev 4.0 this option, like the new /V
+option, will prevent DAZZLE from aborting if it thinks that it has
+detected an unacceptable video controller/monitor combination, though it
+will still give it's usual error messages during startup.
+
+/V = VGA operation mode forced.
+       Normally DAZZLE will automatically detect the video adapter
+hardware attached and adjust itself to utilize the maximum resources
+available.  This option generally SHOULD NOT BE NECESSARY, NOR USED.  It
+should be unable to cause any damage, but is intended for rare
+compatibility conflicts where the startup code in DAZZLE falsely rejects
+the video controller/monitor combination as unacceptable.  This option,
+like the /E option, will allow the error messages to be reported (so
+that you can write us of the problem), but will prevent the program from
+aborting itself.  If the controller/monitor is really VGA compatible, or
+really EGA compatible if using the /E option, then normal image
+generation should be observed.  Unlike the /E option, this option has no
+"artistic" usage or impact.
+
+/T = TALL video aspect ratio mode.
+       Normally the EGA mode of DAZZLE uses a 16 color 640x350
+resolution display with a modified aspect ratio (screen is mapped as if
+it had 640x700 resolution).   The default VGA mode uses 256 color
+320x400 resolution.  The /T option causes the program to use the
+standard BIOS supported screen resolution and aspect ratio in generating
+all images.  The effect is slightly faster image generation, but with a
+noticeably tall aspect ratio.  As of rev 4.0 this option is functional
+with the VGA display mode.  This allows VGA images to be captured, or
+converted to NTSC television video images for recording on video tape.
+Note that due to VGA hardware limitations that using this option will
+prevent the display of "dual page" effects (where a screen composed of a
+different image than the one being displayed is 'panned' or 'scrolled'
+onto the visible display area).
+
+/F = FIXED colors instead of randomized.
+       Normally DAZZLE will randomize the color palette registers
+between each screen erase before starting the next image generation.
+This allows all the possible colors (up to a quarter million on VGA) to
+be used by the program.  This option forces the palette to an identical
+state at all times.
+
+ /A = ALTERNATE (faster) color cycling speed.
+       The default color cycling mode is the slowest, with the most
+subtle shadings and transitions.  This option increases the cycling rate
+used in shaping the palette contents.  This effect is distinct from, but
+
+DAZZLE Revision 4.0                    page 4 of 6
+Program, including source, and all related documentation Copyright
+
+can complement, the "+" and "-" keys that can be used while the program
+is active.
+
+/M = MAD (fastest) color cycling speed.
+       This option not only greatly accelerates the color palette
+contents rotation, but it also increases the number of image primitives
+that can be displayed at one time before the screen is erased.  The
+effect is a far busier screen, a more intense visual experience.  This
+is particularly suited to attention getting in show-rooms and other
+public displays, whereas the default mode is more practical for personal
+meditation and relaxation.
+
+/B = Bashful, no closing credits.
+       DAZZLE will identify itself, including its revision level, when
+the program is first initiated.  In most display modes this opening
+identification will remain on the screen with a "Press any key" prompt
+until the user makes some key entry (or about 30 seconds passes).  The
+BASHFUL option will allow DAZZLE to start without requiring an extra
+keystroke after only a 2 second delay.  This mode will also prevent
+closing credits when the program terminates (similar to the SHOW
+option), and additionally prevents DAZZLE from clearing the type-ahead
+keyboard buffer when it exits.  This allows usage of DAZZLE in a more
+classical 'Screen Saver' mode since whatever key is pressed to exit is
+not lost.  This mode disables ALL key interpretation of DAZZLE, even the
+"+" and the "-" keys will cause DAZZLE to terminate.  DAZZLE does not
+(yet) initiate itself in a 'Screen Saver' fashion, but by using this
+option it can be called from such a utility.
+
+
+       While DAZZLE is actively displaying it's images (if not in
+BASHFUL mode) the "+" and "-" keys can be used to adjust the color
+palette cycling clock.  The console will 'beep' when either the maximum
+or the minimum extreme is reached.  The TAB key can be used to FREEZE
+any display pending another key press.  This is helpful for those that
+wish to capture, photograph, or ponder the current image.  Note that the
+TAB key has two possible effects.  When TAB is first pressed, all screen
+activity is frozen, including color cycling.  At this point if any key
+other than another TAB is pressed then DAZZLE beeps and resumes fully
+normal activity.  If however, a second TAB is pressed, then color
+cycling is resumed, but the image generation engine is still frozen.  In
+this condition any key press, even another TAB, will simply beep and
+resume fully normal activity.
+
+       Most any other keypress during the display will terminate the
+program.  There are some keys that have some harmless undocumented
+effects on the display for various development testing (for example:
+pressing the "H" key will HOLD the current display from fading until the
+"N" key is pressed to start the NEXT display).  The use of either the
+"Enter" or the "Escape" key will guarantee normal program termination.
+
+       All reasonable effort has been made to assure that the use of
+this program on any compatible computer system can have no detrimental
+side effects.  In addition to extensive Quality Assurance testing, the
+
+DAZZLE Revision 4.0                    page 5 of 6
+Program, including source, and all related documentation Copyright
+
+program contains an internal integrity check.  If some ill-willed person
+attempts to attach any virus or other code modifications to this program
+it probably will be detected and the program refuse to execute.  Any
+such persons will be aggressively pursued and prosecuted.  Anyone
+receiving this program and being unable to execute it should contact us
+directly and provide information about where the defective copy was
+acquired.  As of rev 4.0 the anti-viral system uses CRC checking instead
+of the previous checksum algorithm.
+
+
+       Programmers comments: DAZZLE is mostly written in Turbo C 2.0
+(copyright Borland).  Recent attempts to use Turbo C++ 1.0 have seemed
+successful, but quality assurance testing will not be quickly completed
+due to the variations that need to be confirmed.  Assembler code was
+used mostly due to two characteristic of DAZZLE; all image generation is
+done a single pixel at a time, thus video write mode 2 was needed for
+EGA speed, secondly the VGA mode uses the not-so-standard but highly
+portable 320x400 mode instead of the normal BIOS supported 320x200 mode.
+DAZZLE contains a few added tricks as well that reside both in C and
+assembler.
+
+       If you are a C programmer with interest in DAZZLE then please
+write to us.  Not only is it possible to purchase source code, but we
+are currently offering financial incentives for contributing authors.
+We will be glad to provide full details if you send a Self Addressed
+Stamped Envelope, or note your interest when you pay your registration
+fee.
+
+
+This program may be distributed AT NO CHARGE (excluding reasonable
+distribution cost) as is.  All commercial rights retained by the author,
+this program is released in executable form to the Public Domain.  This
+program must not be altered in any way, and is offered without warranty,
+as is, the only assurance to the user is that all reasonable effort has
+been made to confirm that this program as released will produce no
+undesirable or damaging effects on the executing computer.
+
+Comments and inquires about updates, other versions, and other products
+are welcome. Source can be purchased for some products. $10.00
+registration payable to MicroTronics earns a free update and puts you on
+our mailing list (be sure to mention the revision level of the copy of
+DAZZLE that you have currently!).
+
+Mailing address (1990) :
+J.R.Shiflett's Midnight Visions Workshop
+c/o MicroTronics
+503 Shenandoah Drive
+Spring, Tx USA 77381
+
+DAZZLE Revision 4.0                    page 6 of 6
+Program, including source, and all related documentation Copyright
+

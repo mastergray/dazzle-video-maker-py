@@ -1,0 +1,258 @@
+EUUUU
+TQUUUQA@
+UUUUU
+UUUUU@
+UUUUj
+UUUUU
+UQTUQ
+ETUQD
+EUUUUU
+UUUUUU
+UUUUUT
+UUUUUT
+UUUUT
+UUUUUUP@
+p````
+8````
+p0````
+EUUUU
+TQUUUQA@
+UUUUU
+UUUUU@
+UUUUj
+UUUUU
+UQTUQ
+ETUQD
+EUUUUU
+UUUUUU
+UUUUUT
+UUUUUT
+UUUUT
+UUUUUUP@
+p````
+8````
+p0````
+EUUUU
+TQUUUQA@
+UUUUU
+UUUUU@
+UUUUj
+UUUUU
+UQTUQ
+ETUQD
+EUUUUU
+UUUUUU
+UUUUUT
+UUUUUT
+UUUUT
+UUUUUUP@
+rs8rND
+rs8rND
+rs8rND
+rs8rND
+rs8rND
+rr|dND
+{"r'1
+g!6Sd
+!>!> 
+	' D	
+WUuU^
+WuUUW
+]UUUUW
+T=UUU_
+UUUUUUUUUUUUUUUUUUUUUUUUUUUW
+UUUUUUUUUUUUUUUUUUUUUUUUU_
+UUUUUUUUUUUUUUUUUUUUUU
+UUUUUUUUUUUUUUUUUU
+p````
+8````
+UUUUUUUUUUUU_
+p0````
+>~2@~
+nt	F;v
+?dDD;
+K'S'\'k'z'
+NDD=f
+GVGVGVGVG
+DDF;v
+:RRRZR
+RbRjRrRzR
+|d<+t
+<.t2<9w+<0r',0
+|f<Nub
+|S<FuO
+|,<Au(
+;6N5u
+t,Ot)
+!r1RP
+<G)<W
+~"SQR
+}V~`~
+Y;6P5u
+;6P5t
+;6L5u
+.b5_^
+{Y]_^
+_^]DD
+XZ[&:
+YY_^]
+$0<HT`lx
+@}C@=
+$"""""
+WUUUUUU
+23333
+VWVWV
+xUUUUUU
+&#"""""
+hUUUUUU
+433333
+VWRQSP
+RPSUVW
+_^][XZ
+_^][XZ6
+!&!-!K!4!
+"o#A#|#F#b#
+2<	u	&
+RPSUVW
+' PSRQ
+$"$"$
+$3$>$>$
+$>$>$
+%#%6%
+_^][XZ
+LtJ{H
+Turbo-C - Copyright (c) 1988 Borland Intl.
+Null pointer assignment
+Divide error
+Abnormal program termination
+DAZZLE.EXE
+DAZZLE
+Mailing address (1990) :
+J.R.Shiflett's Midnight Visions Workshop
+c/o MicroTronics
+503 Shenandoah Drive
+Spring, Tx USA 77381
+matherr -- program aborted. Contact us for assistance
+sigerr -- program aborted. Contact us for assistance
+Signal %d ,  Type %d  Please write this down!
+Error at CS:%X	 FLAGS = %x
+Usage: %s [- options] [/ options]
+       -c = COMPATIBLE mode, use BIOS for better portability.
+       -2 = 2 part palette update to fix flickering screens (slower).
+       -n = NO retract of hard disk heads.
+       -x = XT compatible, inferior but works.
+       -s = SHOW mode, quick single image.
+       -e = EGA operation mode forced.
+       -v = VGA operation mode forced.
+       -t = TALL video aspect ratio mode.
+       -f = FIXED colors instead of randomized.
+       -a = ALTERNATE (faster) color cycling speed.
+       -m = MAD (fastest) color cycling speed.
+       -b = Bashful, no closing credits.
+During the display the '+' and '-' keys can be used to control color
+cycling speed!  The TAB key will FREEZE the display till next key!
+ ** Refer to %s.DOC for far more details **
+=-=-=-= Development specific command line option =-=-=-=
+       -d = DEBUG mode, for use with debugger.
+ During the display some keys have special functions:
+        L = induce a LineWipe fade.
+        P = induce a Pan/Scroll fade.
+        R = induce a Rotated Rectangle fade.
+        S = induce a Star Burst fade.
+        W = induce a Wipe fade.
+        X = induce a hexagon fade.
+        H = Hold current display from fading.
+        N = Next display now, no image pause.
+cv = %04X, r1 = %04u, r2 = %04u
+This program may be distributed AT NO CHARGE (excluding reasonable
+distribution cost) as is.  All commercial rights retained by the author,
+this program is released in executable form to the Public Domain.  This
+program must not be altered in any way, and is offered without warranty,
+as is, the only assurance to the user is that all reasonable effort has
+been made to confirm that this program as released will produce no
+undesirable or damaging effects on the executing computer.
+Comments and inquires about updates, other versions, and other products
+are welcome. Source can be purchased for some products.
+$10.00 registration payable to MicroTronics earns a free update and puts
+you on our mailing list (mention this programs revision level!).
+Program aborting in anti-viral routines!
+This feature is for YOUR protection, write for a good copy.
+REASON: %s
+failure in genCRC fseek!
+can't read file in genCRC
+can't read header
+can't open file
+file seek error
+can't close file
+can't locate file
+Program name invalid
+program may have been altered, do not use!
+missing anti-viral data
+?atom
+boxes
+curves
+diag1
+diag2
+diag3
+diag4
+ellipse
+formula1
+hexagon
+lines
+lotsadots
+lotsadots2
+pedals
+puffs
+ribbons
+triangles
+tunnel
+sierpinski
+spiral
+spiral1
+squares
+streamer
+sweep
+sweep2
+sweep3
+wandering
+zigstream
+zigzags
+                
+%u   
+ unknown option -%c
+ Loading extra data 
+Forcing the /X option for the detected CPU
+Operation in this mode may produce SUBSTANDARD results
+ anti-viral checking 
+Memory error: EPAL - ABORT
+Memory error: WLINES - ABORT
+ %s  Rev 4.0  J.R.Shiflett  Copyright(c)1989-90 MicroTronics (
+ Press any key to begin 
+Mono EGA is not supported
+$Mono VGA is not supported
+$Color EGA or VGA required, sorry
+$ Hard disk 1 $and 2 $retracted for safety.
+Domain
+Denormal
+Divide by 0
+Overflow
+Underflow
+Partial loss of precision
+Floating point error: %s.
+DOMAIN
+OVERFLOW
+UNDERFLOW
+TLOSS
+PLOSS
+%s: %s error
+	g	g	g
+         !!!!!                  
+@@@@@@@@@@@@@@@
+@@@@@@@
+@@@@@@
+@@@@ 
+print scanf : floating point formats not linked
+(null)
+0123456789ABCDEF
+COMPAQ
+cxyxyxy

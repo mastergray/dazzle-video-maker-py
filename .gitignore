@@ -1,0 +1,32 @@
+# Rendered test outputs — large, fully regeneratable from render.py
+dazzle_py/test/*.mp4
+dazzle_py/test/*.mkv
+dazzle_py/test/*.webm
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Ghidra projects — large binaries, regeneratable from the original EXE
+decompile/
+decompile-v40/
+
+# External tool clones (these are their own repos, fetch as needed)
+tools/
+
+# Shareware binaries — not public domain, shouldn't be committed
+DAZZLE50/
+DAZZLE50.ZIP
+DAZZLE.unpacked
+Dazzle 4.2/
+Dazzle 4.2.7z
+
+# Derivative work of shareware (decompile of 5.0) — keep local-only
+decompiled/
+extracted/
+effects_analysis.json
+
+# OS noise
+.DS_Store
+Thumbs.db
