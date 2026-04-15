@@ -109,18 +109,27 @@ def _soft_switch_prob(frames_since, min_frames, max_frames):
 
 
 def render(audio_path, out_path, scale=3, fps=60, seed=None,
-           switch_every=6.0, effects_filter=None, crf=23, analysis_json=None,
+           crf=23, analysis_json=None,
            use_sections=True, min_scene_sec=2.5, max_scene_sec=12.0,
-           mode='scenes', overlay_min=3, overlay_max=5, max_overlap=1):
+           mode='random', min_fx=4, max_fx=5, max_overlap=1,
+           fixed_effects=None):
+    """Render audio to MP4.
+
+    mode='random': rotate through all 32 effects; each scene holds min_fx..max_fx
+                   stacked effects, swaps on section/downbeat boundaries.
+    mode='fixed':  fixed_effects list IS the scene — stack all of them for the whole
+                   render, no rotation. min_fx/max_fx/max_overlap ignored.
+    """
     rng = np.random.default_rng(seed)
     # Use same seed for numpy.random (used by effect internals)
     np.random.seed(rng.integers(0, 2**31 - 1))
 
-    effect_names = list(REGISTRY.keys())
-    if effects_filter:
-        effect_names = [e for e in effect_names if e in effects_filter]
-    if not effect_names:
-        raise SystemExit(f'no effects match filter {effects_filter}')
+    if mode == 'fixed':
+        if not fixed_effects:
+            raise SystemExit('--mode fixed requires --effects')
+        effect_names = list(fixed_effects)
+    else:
+        effect_names = list(REGISTRY.keys())
 
     width = W * scale
     height = H * scale
@@ -151,15 +160,14 @@ def render(audio_path, out_path, scale=3, fps=60, seed=None,
     prev_names = []
 
     def _new_set():
-        if mode == 'overlay':
-            count = int(rng.integers(overlay_min, overlay_max + 1))
-            return pick_effect_set(effect_names, rng, count,
-                                   avoid_names=prev_names, max_overlap=max_overlap)
-        else:
-            name, eff = pick_effect(effect_names, rng, avoid_names=prev_names)
-            return [(name, eff)]
+        count = int(rng.integers(min_fx, max_fx + 1))
+        return pick_effect_set(effect_names, rng, count,
+                               avoid_names=prev_names, max_overlap=max_overlap)
 
-    active = _new_set()
+    if mode == 'fixed':
+        active = [(n, REGISTRY[n]()) for n in effect_names]
+    else:
+        active = _new_set()
     prev_names = [n for n, _ in active]
     print(f'  [0.00s] {mode} -> {prev_names}')
     last_switch_frame = 0
@@ -175,18 +183,21 @@ def render(audio_path, out_path, scale=3, fps=60, seed=None,
             t_sec = i / fps
 
             frames_since = i - last_switch_frame
-            # Hard switch: a real section_change lands here and we've held long enough
-            hard_switch = i in section_frames and frames_since >= min_frames
-            # Soft switch: held at least min and a downbeat lands here
-            soft_switch = (
-                frames_since >= min_frames
-                and i in downbeat_frames
-                and not hard_switch  # avoid double-counting
-                # Only fire if we're "due" — bias toward switching more often as we approach max_frames
-                and (rng.random() < _soft_switch_prob(frames_since, min_frames, max_frames))
-            )
-            forced_switch = frames_since >= max_frames
-            want_switch = hard_switch or soft_switch or forced_switch
+            if mode == 'fixed':
+                want_switch = False
+            else:
+                # Hard switch: a real section_change lands here and we've held long enough
+                hard_switch = i in section_frames and frames_since >= min_frames
+                # Soft switch: held at least min and a downbeat lands here
+                soft_switch = (
+                    frames_since >= min_frames
+                    and i in downbeat_frames
+                    and not hard_switch  # avoid double-counting
+                    # Only fire if we're "due" — bias toward switching more often as we approach max_frames
+                    and (rng.random() < _soft_switch_prob(frames_since, min_frames, max_frames))
+                )
+                forced_switch = frames_since >= max_frames
+                want_switch = hard_switch or soft_switch or forced_switch
             if want_switch and i > 0:
                 active = _new_set()
                 prev_names = [n for n, _ in active]
@@ -237,32 +248,35 @@ def main():
     p.add_argument('--fps', type=int, default=60)
     p.add_argument('--seed', type=int, default=None,
                    help='random seed (omit for per-run randomness)')
-    p.add_argument('--switch-every', type=float, default=6.0,
-                   help='seconds between effect switches (default 6.0)')
+    p.add_argument('--mode', choices=['random', 'fixed'], default='random',
+                   help='random = rotate all 32 effects with min-fx..max-fx stacked per '
+                        'scene (default); fixed = use --effects as a single static scene')
     p.add_argument('--effects', nargs='+', default=None,
-                   help='restrict rotation to these effect names (see --list-effects)')
+                   help='[fixed mode only] exact list of effects to stack as one scene '
+                        '(see --list-effects)')
     p.add_argument('--list-effects', action='store_true',
                    help='print all available effect names and exit')
+    p.add_argument('--min-fx', type=int, default=4,
+                   help='[random mode] minimum stacked effects per scene (default 4)')
+    p.add_argument('--max-fx', type=int, default=5,
+                   help='[random mode] maximum stacked effects per scene (default 5; '
+                        'original Dazzle went up to 8)')
+    p.add_argument('--max-overlap', type=int, default=1,
+                   help='[random mode] max effects carried over from the previous scene '
+                        '(default 1; may be exceeded when pool is too small)')
+    p.add_argument('--unique', action='store_true',
+                   help='[random mode] no effect from the previous scene carries over '
+                        '(alias for --max-overlap 0)')
+    p.add_argument('--min-scene', type=float, default=2.5,
+                   help='[random mode] minimum seconds to hold a scene (default 2.5)')
+    p.add_argument('--max-scene', type=float, default=12.0,
+                   help='[random mode] maximum seconds before forcing a switch (default 12.0)')
+    p.add_argument('--no-sections', action='store_true',
+                   help='[random mode] ignore section_change events from the analyzer')
     p.add_argument('--crf', type=int, default=23,
                    help='H.264 quality (18=near-lossless, 23=default, 28=smaller). default 23')
     p.add_argument('--analysis', default=None,
                    help='pre-computed audio analysis JSON (omit to auto-run analyzer)')
-    p.add_argument('--no-sections', action='store_true',
-                   help='ignore section_change events, use fixed switch-every timer')
-    p.add_argument('--min-scene', type=float, default=2.5,
-                   help='minimum seconds to hold a scene (default 2.5)')
-    p.add_argument('--max-scene', type=float, default=12.0,
-                   help='maximum seconds before forcing a switch (default 12.0)')
-    p.add_argument('--mode', choices=['scenes', 'overlay'], default='scenes',
-                   help='scenes = one effect at a time (default); overlay = 3-8 simultaneous')
-    p.add_argument('--overlay-min', type=int, default=4,
-                   help='minimum effects in an overlay set (default 4)')
-    p.add_argument('--overlay-max', type=int, default=5,
-                   help='maximum effects in an overlay set (default 5, original Dazzle went up to 8)')
-    p.add_argument('--max-overlap', type=int, default=1,
-                   help='max effects carried over from the previous scene (default 1; may be exceeded when pool is too small to satisfy)')
-    p.add_argument('--unique', action='store_true',
-                   help='guarantee no effect from the previous scene appears in the next (equivalent to --max-overlap 0)')
     args = p.parse_args()
 
     if args.list_effects:
@@ -270,25 +284,28 @@ def main():
             print(name)
         return
 
-    if args.effects:
+    # Mode-specific constraint validation
+    if args.mode == 'fixed':
+        if not args.effects:
+            p.error('--mode fixed requires --effects NAME [NAME ...]')
         unknown = [e for e in args.effects if e not in REGISTRY]
         if unknown:
             valid = ', '.join(sorted(REGISTRY.keys()))
             p.error(f"unknown effect name(s): {', '.join(unknown)}\n  valid: {valid}")
-        if args.mode == 'overlay' and len(args.effects) < args.overlay_min:
-            print(f'warning: --effects has {len(args.effects)} names but --overlay-min is '
-                  f'{args.overlay_min}; scenes will be capped to {len(args.effects)} effects',
-                  file=sys.stderr)
+    else:  # random
+        if args.effects:
+            p.error('--effects is only valid with --mode fixed; for random mode use all 32')
+        if args.min_fx > args.max_fx:
+            p.error(f'--min-fx ({args.min_fx}) must be <= --max-fx ({args.max_fx})')
 
     max_overlap = 0 if args.unique else args.max_overlap
     render(args.audio, args.output,
            scale=args.scale, fps=args.fps, seed=args.seed,
-           switch_every=args.switch_every, effects_filter=args.effects,
            crf=args.crf, analysis_json=args.analysis,
            use_sections=not args.no_sections,
            min_scene_sec=args.min_scene, max_scene_sec=args.max_scene,
-           mode=args.mode, overlay_min=args.overlay_min, overlay_max=args.overlay_max,
-           max_overlap=max_overlap)
+           mode=args.mode, min_fx=args.min_fx, max_fx=args.max_fx,
+           max_overlap=max_overlap, fixed_effects=args.effects)
 
 
 if __name__ == '__main__':
