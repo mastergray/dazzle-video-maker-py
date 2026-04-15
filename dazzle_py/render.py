@@ -5,6 +5,8 @@ which muxes with the source audio and encodes H.264/AAC in a single pass.
 """
 from __future__ import annotations
 import argparse
+import json
+import os
 import subprocess
 import sys
 import time
@@ -108,18 +110,26 @@ def _soft_switch_prob(frames_since, min_frames, max_frames):
     return max(0.0, min(1.0, progress))
 
 
-def render(audio_path, out_path, scale=3, fps=60, seed=None,
+def render(audio_path, out_path, scale=6, fps=60, seed=None,
            crf=23, analysis_json=None,
-           use_sections=True, min_scene_sec=2.5, max_scene_sec=12.0,
-           mode='random', min_fx=4, max_fx=5, max_overlap=1,
-           fixed_effects=None):
+           mode='random', min_fx=4, max_fx=5, max_overlap=0,
+           fixed_effects=None, profile_path=None):
     """Render audio to MP4.
 
     mode='random': rotate through all 32 effects; each scene holds min_fx..max_fx
-                   stacked effects, swaps on section/downbeat boundaries.
+                   stacked effects, swaps on section_change (hard) and downbeat (soft).
     mode='fixed':  fixed_effects list IS the scene — stack all of them for the whole
                    render, no rotation. min_fx/max_fx/max_overlap ignored.
     """
+    # Hardcoded scheduler tuning (were CLI flags --min-scene/--max-scene/--no-sections,
+    # now commented out in main(); values preserved here for identical behavior).
+    _use_sections = True
+    _min_scene_sec = 2.5
+    _max_scene_sec = 12.0
+
+    # Resolve seed to an int so we can record it in the profile for reproducibility.
+    if seed is None:
+        seed = int.from_bytes(os.urandom(4), 'big')
     rng = np.random.default_rng(seed)
     # Use same seed for numpy.random (used by effect internals)
     np.random.seed(rng.integers(0, 2**31 - 1))
@@ -145,13 +155,13 @@ def render(audio_path, out_path, scale=3, fps=60, seed=None,
     #   - section_change events = hard switch (always, provided min-scene met)
     #   - between sections, the next downbeat after min_scene_sec = soft switch
     #   - max_scene_sec = forced switch (beat-aligned if possible, else hard)
-    section_frames = set(af.section_change_frames) if use_sections else set()
-    downbeat_frames = set(np.where(af.downbeat)[0].tolist()) if use_sections else set()
+    section_frames = set(af.section_change_frames) if _use_sections else set()
+    downbeat_frames = set(np.where(af.downbeat)[0].tolist()) if _use_sections else set()
 
-    min_frames = int(min_scene_sec * fps)
-    max_frames = int(max_scene_sec * fps)
+    min_frames = int(_min_scene_sec * fps)
+    max_frames = int(_max_scene_sec * fps)
     print(f'  policy: sections={len(section_frames)} downbeats={len(downbeat_frames)} '
-          f'min_scene={min_scene_sec}s max_scene={max_scene_sec}s')
+          f'min_scene={_min_scene_sec}s max_scene={_max_scene_sec}s')
 
     buffer = np.zeros((H, W), dtype=np.uint8)
     palette = rainbow_palette()
@@ -169,6 +179,7 @@ def render(audio_path, out_path, scale=3, fps=60, seed=None,
     else:
         active = _new_set()
     prev_names = [n for n, _ in active]
+    scene_log = [{'t_sec': 0.0, 'effects': list(prev_names)}]
     print(f'  [0.00s] {mode} -> {prev_names}')
     last_switch_frame = 0
 
@@ -205,6 +216,7 @@ def render(audio_path, out_path, scale=3, fps=60, seed=None,
                 palette = rainbow_palette()
                 if rng.random() < 0.5:
                     palette = cycle(palette, int(rng.integers(1, 255)))
+                scene_log.append({'t_sec': round(t_sec, 3), 'effects': list(prev_names)})
                 print(f'  [{t_sec:5.2f}s] {mode} -> {prev_names}')
                 last_switch_frame = i
 
@@ -236,53 +248,143 @@ def render(audio_path, out_path, scale=3, fps=60, seed=None,
         ffmpeg.wait()
 
     dt = time.time() - t0
-    print(f'done in {dt:.1f}s  ({af.n_frames / dt:.1f} fps)')
+    render_fps = af.n_frames / dt
+    print(f'done in {dt:.1f}s  ({render_fps:.1f} fps)')
+
+    # ----- Build render profile -----
+    profile = {
+        'input': {
+            'audio': os.path.abspath(audio_path),
+            'duration_sec': round(af.duration_sec, 3),
+            'sample_rate': af.sr,
+        },
+        'output': {
+            'path': os.path.abspath(out_path),
+            'width': width,
+            'height': height,
+            'fps': fps,
+            'n_frames': int(af.n_frames),
+        },
+        'settings': {
+            'mode': mode,
+            'scale': scale,
+            'crf': crf,
+            'seed': int(seed),
+            **({'fixed_effects': list(fixed_effects)}
+               if mode == 'fixed'
+               else {'min_fx': min_fx, 'max_fx': max_fx, 'overlap': max_overlap}),
+        },
+        'audio_analysis_summary': {
+            'beats': int(af.beat.sum()),
+            'downbeats': int(af.downbeat.sum()),
+            'peaks': int(af.peak.sum()),
+            'sections': len(af.section_change_frames),
+            'silence_frames': int(af.in_silence.sum()),
+        },
+        'scenes': scene_log,
+        'render_stats': {
+            'wall_sec': round(dt, 2),
+            'render_fps': round(render_fps, 2),
+        },
+        'audio_analysis': af.raw_analysis,
+    }
+
+    # ----- End-of-render console summary -----
+    s = profile['settings']
+    print()
+    print('=== render summary ===')
+    print(f'  input:   {profile["input"]["audio"]}')
+    print(f'  output:  {profile["output"]["path"]}  ({width}x{height}@{fps})')
+    print(f'  mode:    {s["mode"]}')
+    if mode == 'fixed':
+        print(f'  effects: {", ".join(s["fixed_effects"])}')
+    else:
+        print(f'  density: min={s["min_fx"]} max={s["max_fx"]} overlap={s["overlap"]}')
+    print(f'  seed:    {s["seed"]}')
+    asum = profile['audio_analysis_summary']
+    print(f'  audio:   {profile["input"]["duration_sec"]:.2f}s  '
+          f'beats={asum["beats"]} downbeats={asum["downbeats"]} '
+          f'peaks={asum["peaks"]} sections={asum["sections"]}')
+    print(f'  scenes:  {len(scene_log)} scene(s) rendered')
+    print(f'  render:  {dt:.1f}s at {render_fps:.1f} fps')
+
+    # ----- Write profile JSON -----
+    if profile_path is not None:
+        with open(profile_path, 'w') as f:
+            json.dump(profile, f, indent=2)
+        print(f'  profile: {os.path.abspath(profile_path)}')
+    else:
+        print('  profile: (skipped, --no-profile)')
+
+    # ----- Clean up auto-generated analysis tempfile -----
+    if getattr(af, '_tmp_json', None):
+        try:
+            os.remove(af._tmp_json)
+        except OSError:
+            pass
 
 
 def main():
-    p = argparse.ArgumentParser(description='Dazzle-port offline renderer')
+    fx_names = sorted(REGISTRY.keys())
+    epilog = 'Available effects ({}):\n  '.format(len(fx_names)) + ', '.join(fx_names)
+    p = argparse.ArgumentParser(
+        description='Dazzle-port offline renderer',
+        epilog=epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     p.add_argument('audio', help='input audio (WAV)')
     p.add_argument('output', help='output MP4')
-    p.add_argument('--scale', type=int, default=3,
-                   help='upscale factor (320x200 * scale); default 3 -> 960x600')
-    p.add_argument('--fps', type=int, default=60)
-    p.add_argument('--seed', type=int, default=None,
-                   help='random seed (omit for per-run randomness)')
-    p.add_argument('--mode', choices=['random', 'fixed'], default='random',
-                   help='random = rotate all 32 effects with min-fx..max-fx stacked per '
-                        'scene (default); fixed = use --effects as a single static scene')
-    p.add_argument('--effects', nargs='+', default=None,
-                   help='[fixed mode only] exact list of effects to stack as one scene '
-                        '(see --list-effects)')
-    p.add_argument('--list-effects', action='store_true',
-                   help='print all available effect names and exit')
-    p.add_argument('--min-fx', type=int, default=4,
-                   help='[random mode] minimum stacked effects per scene (default 4)')
-    p.add_argument('--max-fx', type=int, default=5,
-                   help='[random mode] maximum stacked effects per scene (default 5; '
-                        'original Dazzle went up to 8)')
-    p.add_argument('--max-overlap', type=int, default=1,
-                   help='[random mode] max effects carried over from the previous scene '
-                        '(default 1; may be exceeded when pool is too small)')
-    p.add_argument('--unique', action='store_true',
-                   help='[random mode] no effect from the previous scene carries over '
-                        '(alias for --max-overlap 0)')
-    p.add_argument('--min-scene', type=float, default=2.5,
-                   help='[random mode] minimum seconds to hold a scene (default 2.5)')
-    p.add_argument('--max-scene', type=float, default=12.0,
-                   help='[random mode] maximum seconds before forcing a switch (default 12.0)')
-    p.add_argument('--no-sections', action='store_true',
-                   help='[random mode] ignore section_change events from the analyzer')
-    p.add_argument('--crf', type=int, default=23,
-                   help='H.264 quality (18=near-lossless, 23=default, 28=smaller). default 23')
-    p.add_argument('--analysis', default=None,
-                   help='pre-computed audio analysis JSON (omit to auto-run analyzer)')
-    args = p.parse_args()
 
-    if args.list_effects:
-        for name in sorted(REGISTRY.keys()):
-            print(name)
-        return
+    mode_grp = p.add_argument_group('mode selection')
+    mode_grp.add_argument('--mode', choices=['random', 'fixed'], default='random',
+                          help='random = rotate all 32 effects with --min..--max stacked per '
+                               'scene (default); fixed = use --effects as a single static scene')
+    mode_grp.add_argument('--effects', nargs='+', default=None,
+                          help='[fixed mode] exact list of effects to stack as one scene '
+                               '(see full list in epilog)')
+
+    rand_grp = p.add_argument_group('random-mode options')
+    rand_grp.add_argument('--min', dest='min_fx', type=int, default=4,
+                          help='minimum stacked effects per scene (default 4)')
+    rand_grp.add_argument('--max', dest='max_fx', type=int, default=5,
+                          help='maximum stacked effects per scene (default 5; original '
+                               'Dazzle went up to 8)')
+    rand_grp.add_argument('--overlap', type=int, default=0,
+                          help='max effects carried over from the previous scene '
+                               '(default 0 = fully disjoint; ceiling may be exceeded '
+                               'if pool is small)')
+    # --min-scene / --max-scene / --no-sections removed from the CLI; scheduler
+    # defaults are now hardcoded in render(). Uncomment if user control returns.
+    # rand_grp.add_argument('--min-scene', type=float, default=2.5,
+    #                       help='minimum seconds to hold a scene (default 2.5)')
+    # rand_grp.add_argument('--max-scene', type=float, default=12.0,
+    #                       help='maximum seconds before forcing a switch (default 12.0)')
+    # rand_grp.add_argument('--no-sections', action='store_true',
+    #                       help='ignore section_change events from the analyzer')
+
+    out_grp = p.add_argument_group('output / encoding')
+    out_grp.add_argument('--scale', type=int, default=6,
+                         help='upscale factor (320x200 * scale); default 6 -> 1920x1200 '
+                              '(YouTube-friendly)')
+    out_grp.add_argument('--fps', type=int, default=60)
+    out_grp.add_argument('--crf', type=int, default=23,
+                         help='H.264 quality (18=near-lossless, 23=default, 28=smaller). '
+                              'default 23')
+    out_grp.add_argument('--seed', type=int, default=None,
+                         help='random seed (omit for per-run randomness; resolved seed is '
+                              'recorded in the profile)')
+    out_grp.add_argument('--analysis', default=None,
+                         help='pre-computed audio analysis JSON (omit to auto-run analyzer; '
+                              'auto-generated files are deleted after render)')
+
+    prof_grp = p.add_argument_group('profile')
+    prof_grp.add_argument('--profile', default=None,
+                          help='path to write render profile JSON (default: '
+                               '<output>.profile.json next to the MP4). Contains all '
+                               'settings + inlined analysis.')
+    prof_grp.add_argument('--no-profile', action='store_true',
+                          help='skip writing the profile JSON (console summary still prints)')
+    args = p.parse_args()
 
     # Mode-specific constraint validation
     if args.mode == 'fixed':
@@ -296,16 +398,23 @@ def main():
         if args.effects:
             p.error('--effects is only valid with --mode fixed; for random mode use all 32')
         if args.min_fx > args.max_fx:
-            p.error(f'--min-fx ({args.min_fx}) must be <= --max-fx ({args.max_fx})')
+            p.error(f'--min ({args.min_fx}) must be <= --max ({args.max_fx})')
 
-    max_overlap = 0 if args.unique else args.max_overlap
+    # Resolve profile path: explicit --profile wins; --no-profile disables; else derive.
+    if args.no_profile:
+        profile_path = None
+    elif args.profile is not None:
+        profile_path = args.profile
+    else:
+        base, _ = os.path.splitext(args.output)
+        profile_path = base + '.profile.json'
+
     render(args.audio, args.output,
            scale=args.scale, fps=args.fps, seed=args.seed,
            crf=args.crf, analysis_json=args.analysis,
-           use_sections=not args.no_sections,
-           min_scene_sec=args.min_scene, max_scene_sec=args.max_scene,
            mode=args.mode, min_fx=args.min_fx, max_fx=args.max_fx,
-           max_overlap=max_overlap, fixed_effects=args.effects)
+           max_overlap=args.overlap, fixed_effects=args.effects,
+           profile_path=profile_path)
 
 
 if __name__ == '__main__':

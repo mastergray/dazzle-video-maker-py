@@ -79,6 +79,8 @@ class AudioFeatures:
 
         with open(analysis_json) as f:
             analysis = json.load(f)
+        # Keep the raw blob so the renderer can inline it into a profile file.
+        self.raw_analysis = analysis
 
         # Per-frame interpolation: analyzer is at 20Hz (50ms hops), we want `fps` Hz.
         frames = analysis['frames']
