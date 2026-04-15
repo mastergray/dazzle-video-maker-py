@@ -143,8 +143,15 @@ dazzle_py/
   heXagon, Starburst, …) that applied a compositing pass on top of any shape
   generator. v4.0 has only shape generators. Adding an optional mirror-tile
   pass would let any of the 32 effects render kaleidoscopically.
-- **MIDI input** — drive effect parameters from MIDI note-on / CC events as
-  an alternative (or supplement) to FFT reactivity.
+- **MIDI as an input source** — accept a `.mid` file as a first-class input
+  alongside (or instead of) a WAV. Two roles:
+  1. *Reactivity driver*: note-on / velocity / CC events feed the scheduler
+     and per-effect parameters, providing structured triggers that FFT
+     analysis can only approximate (e.g. snare hits, pad holds, pitch bends).
+  2. *Audio source*: synthesize the MIDI to audio at render time (via
+     fluidsynth + a soundfont) so the output MP4 has both the audio track
+     and the MIDI-driven visuals. Useful for chiptune/tracker material where
+     a WAV bounce would lose structure.
 - **SRT subtitle track** — label the active effect(s) per scene in the
   exported video.
 - **More effects** — the v5.0 catalog added `balls`, `cones`, `corkscrew`,
