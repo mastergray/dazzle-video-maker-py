@@ -1,9 +1,12 @@
 """Audio feature extraction for audio-reactive Dazzle port.
 
-Primary source is the richer external analyzer at seamless-disarray/video-generator-py
-(beats, onsets, section changes, spectral brightness, tension, segment labels).
-We add a supplementary 3-band FFT pass (bass/mid/treble) since the external
+The analyzer (vendored as `analyze_audio.py` alongside this file) produces
+beats, onsets, section changes, spectral brightness, tension, and segment
+labels. We add a supplementary 3-band FFT pass (bass/mid/treble) since the
 analyzer only provides overall energy + spectral centroid.
+
+Originally sourced from seamless-disarray/video-generator-py; vendored here
+so the dazzle port is self-contained.
 """
 from __future__ import annotations
 import json
@@ -16,9 +19,7 @@ import numpy as np
 import soundfile as sf
 
 
-EXTERNAL_ANALYZER = Path(
-    '/home/mastergray/codex/seamless-disarray/video-generator-py/scripts/analyze_audio.py'
-)
+EXTERNAL_ANALYZER = Path(__file__).resolve().parent / 'analyze_audio.py'
 
 
 class AudioFeatures:
