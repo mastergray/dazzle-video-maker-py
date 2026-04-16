@@ -1,0 +1,476 @@
+tdTY;
+|h<+t
+<.t2<9w+<0r',0
+YY<+t
+YY<9w
+|s<Nuo
+|\<FuX
+|1<Au-
+4>0B^]
+tn<%tm
+t)<]t(<-u
+|c<+t
+r.<0ux
+YY<xtZ<XtV
+u3SQR
+!!!_!f!k!
+!r!v!z!
+"?"_"
+;6VGu
+	Gr!:
+ZY[DD
+[YZ^_]
+!r.RP
+PPPP&
+ub&9W
+&)7P&
+t4O~1
+t4Ot1
+VwW6W
+YYPR3
+?\tG&
+?\YG;~
+>f[`r+
+>h[`v
+7\YY3
+.8aZ+
+$2YY^
+?\Y)>
+?\Y9>
+?\Y9>
+]nt{;6
+]ntIF;v
+%<%W%l%U
+;>Q\r
+;6O\sH
+;6O\r
+;>Q\s
+H+HpH
+I:IKIiI
+tgF;6
+PPPPPP
+1,151>1
+2"2*2V
+	#	Z	3
+".#Q#U
+9&+WB
+|t&9WB~
+&9WB|
+;6zts~
+YYF;6ztr
+;6ztsE3
+F;6ztr
+&9GBv
+bw&9wBv
+bw&9w
+bw&9w
+bw&9w
+i?_^]
+$0<HT`lx
+$"""""
+WUUUUUU
+23333
+VWVWV
+xUUUUUU
+&#"""""
+hUUUUUU
+433333
+VWRQSP
+%l&n&
+ PSRQ
+`%e%r%r%
+j%r%r%r%
+[ZYX6
+LtJ{H
+Borland C++ - Copyright 1991 Borland Intl.
+Divide error
+Abnormal program termination
+DAZZLE.EXE
+DAZZLE
+Comments and inquires about updates and other products are welcome at
+our mailing address. $15 ($20US for non-U.S.A. sites) registration payable
+to MicroTronics required after 10 days usage, which makes you eligible
+for an update disk and puts you on our PRIVATE mailing list.
+Add $5 extra for a printed manual. DOS & Windows Screen Savers available
+for an additional cost.
+?arches
+balls
+bigstar
+boxes
+cones
+corkscrew
+curves
+cycloids
+daisies
+diag1
+diag2
+ellipse
+formula1
+hexagon
+hilbert
+lines
+littleStars
+lotsadots
+pedals
+puffs
+ribbons
+triangles
+tunnel
+sierpinski
+spiral
+spiral1
+squares
+squirals
+sweep
+sweep2
+wandering
+zigstream
+butterflies
+diamonds
+gumballs
+tiles
+wedges
+yarnball
+rAndomize
+Blister
+Countdown
+Exclusive-or
+Firefly
+Gas cloud
+spIral
+Juggle palette
+Kleenup
+Linewipe
+firewOrks
+Pan/scroll
+Quilt
+Rectangles
+Starburst
+Twist
+Umbra
+moVingbars
+heXagon
+tetrYs
+ Startup error getting directory.
+Please write for assistance. Press any key to continue.
+parser corrupted!
+Program Loading
+PATH ERROR ON EXIT
+Program aborting in startup routines due to defective configuration file!
+zt?Memory exhausted in star_burst routine!
+ Unable to load file : %s
+ rev. 
+Copyright(c)1989-92 MicroTronics
+matherr -- program aborted. Contact us for assistance.
+Program revision level : %s
+REASON 
+sigerr -- program aborted. Contact us for assistance
+Signal %d, Type %d,  Please print this error message!
+Error at %04X:%04X	 FLAGS = %04X
+SEGMENT MAP : 
+DZLE_Seg  = %04X
+DZL2_Seg  = %04X
+DZFD_Seg  = %04X
+DVDT_Seg  = %04X
+DOSI_Seg  = %04X
+DHUF_Seg  = %04X
+DLOGO_Seg = %04X
+DAZPCX_Seg = %04X
+Program revision level :%s, %s
+ Program aborting in antiviral routines! cv=%08lX, r1=%05u, r2=%05u
+This feature is for YOUR protection, write us for a good copy.
+ Program aborting! cv=%08lX, r1=%05u, r2=%05u
+REASON: %s 
+can't read EXE header
+failure in genCRC fseek!
+memory unavailable in genCRC 
+deRead can't open file
+deRead file seek error
+deRead can't close file
+ antiviral checking 
+can't locate file for self check
+Program name should be %s, not %s.%s
+bad ckval--program may have been altered, do not use!
+missing antiviral data
+                    
+Mailing address (1992) :
+                         Compuserve   76236,1573
+ MicroTronics 
+                                   Voice/FAX (713)298-1698
+ P.O.Box 8759 
+ Spring, TX. U.S.A. 77387-8759
+Software products can be ordered from MicroTronics at the
+address below. Please include this completed form with your check.
+We do not CURRENTLY take individual telephone orders, so please write.
+Please PRINT your full name and address clearly.
+Program name : %s 
+Revision     : %s 
+ID codes     : r1=%05u,  r2=%05u
+ *** MicroTronics product REGISTRATION and ORDER FORM ***
+Check your MSDOS floppy disk format : 5.25(__)  3.5(__)
+  DSHD [High Density] (__)  DSDD [Low Density] (__)
+When registering this shareware program you will receive a credit for
+an update disk. Registered users receive our regular mailings providing
+the most current information about program enhancements and new products.
+Check here if you want to receive a program disk now,
+instead of receiving a credit for your future use : (__)
+Check here if interested in our retail DOS and Windows self activating
+ Screen Saver products : (__)
+Check here if interested in Multi-Copy or Site License prices : (__)
+Check here to receive information about MT-DAZZLE Music Videos, shirts,
+ mugs, cards, prints, etc. : (__)
+Please review the User's Manual for an abundance of useful information,
+ and legal limitations on the use of this program and it's images.
+Enter "%s -?" at the DOS prompt for a short help screen, and instructions on extracting the manual.
+ An order form has been provided.
+ Please address it as follows:
+ Usage: %s -options inputfile
+       -$  Display order information.
+       -2  2 part palette update to fix flickering screens (slower).
+       -a  Alternate (faster) color cycling speed.
+       -b  Bashful, no closing credits & any key aborts.
+       -c  Compatible mode, use BIOS for better portability.
+       -d  Delay, slow down drawing for faster PC's.
+           "-d=xxxx" delay xxxx units.
+       -i  Insecure, no antiviral checking.
+       -m  Mad (fastest) color cycling speed.
+       -n  No retract of hard disk heads.
+       -q  Quiet, no tones (no effect on warning beeps).
+       -s  Show mode, quick single image.
+           "-s=xxxx" Show mode, duration xxxx seconds.
+       -w  Window environment, no messages & changes some defaults.
+       -x  XT compatible, inferior but works.
+       -z  Create DAZZLE.DOC file on current disk path!
+During the display the TAB key will FREEZE the display till SPACE is pressed.
+F1 activates on-line help during the program. F2 provides a configuration menu.
+ESCAPE
+ terminates the program.
+ ** Refer to DAZZLE.DOC for far more details **
+Press any key to continue
+If an "inputfile" is not specified, the program will try to locate
+and load %s from the current path. To prevent this load
+specify an inputfile name of "*".
+ Additional Options
+       -e  EGA operation mode forced.
+       -h  Hide EGA border.
+       -k  Keyboard typematic unchanged.
+       -t  Tall video aspect ratio mode.
+ limited use command line options 
+       -+  Ignore TARGA+64, even if present.
+       -!  Monitor Screen Saver driver interface.
+       -4  Restrict the EGA mode to only 4 random colors.
+       -f  Fixed colors instead of randomized.
+       -v  VGA operation mode forced.
+This program may be distributed as is AT NO CHARGE by the distributor
+(excluding reasonable duplication cost). All commercial rights retained
+by the author! This program must not be altered in any way, and is offered
+as is without warranty. Refer to User's Manual for usage limitations and
+royalty requirements.
+Enter "DAZZLE -Z" at the DOS prompt to generate the User's Manual.
+Enter "DAZZLE -$ > PRN:" at the DOS prompt to print an order form.
+When you write be sure to mention your floppy disk format and this program's
+version of %s 
+EXE, COM, and BAT are illegal extentions for File Name!
+?MTDAZZLE.DZL
+ Memory error: EPAL - ABORT
+ Memory error: WLINES - ABORT
+ Memory error: BALL - ABORT
+Corrupted version data in the input file
+WARNING: bad version in the input file
+Error closing input file
+Unable to open file for write
+; This file created by MTDAZZLE.  It is a text file of program
+; configuration information that can be edited, allowing customization
+; of the display. Refer to MTDAZZLE.DOC for full details.
+; Be sure not to delete the VERSION flag that starts with '#'!
+#10500;DO NOT MODIFY THIS LINE!
+~%c [%03d] ; %s image size
+^%c [%03d] ; %s image size
+%c [%c] ; %s fade enable
+$I [%03d] ; mInimum image count in Auto Mode
+$X [%03d] ; maXimum image count in Auto Mode
+$F [%03d] ; Fade delay time in Auto Mode
+ Illegal configuration file name ignored.
+ Loaded %s
+ unknown option /%c 
+ unable to parse %s
+ Delay time limited to 8191 units!
+ ShowTime limited to 3600 seconds!
+ Forcing the /X option for the detected CPU
+ video mode (
+TARGA+64)
+ ACTIVE
+ INACTIVE
+ Screen Saver Driver detected.
+ Mouse Disabled.
+ Type '%s -?' at the DOS prompt for help.
+*.DZL
+@                DAZZLE Help Screen Subsystem
+To reduce executable file size these menus are limited in
+scope.  Please take the time to read the DAZZLE.DOC file, it
+will show you how to get the most out of this program. Use the
+'DAZZLE -?' command at the DOS prompt for an outline of
+command line options. DAZZLE can create a new copy of
+DAZZLE.DOC if you invoke it as 'DAZZLE -Z' at the DOS prompt!
+The keyboard functions under these menu screens vary from the
+actions when DAZZLE is actively displaying graphic screens.
+Cursor movement is accepted from the arrow keys. The HOME key
+jumps to the first menu or field, the END key jumps to the
+last menu or field.  PAGE UP (PgUp), and PAGE DOWN (PgDn) keys
+step from one menu to another. Note the display at the bottom
+right of this text window, it has [PgDn], which means that
+more pages are available. ENTER accepts any input you provide.
+To exit a menu subsystem, press the same key that activated
+that system.  Therefore, to exit HELP press F1 again. To see
+more help press the PgDn key.
+The following keys can be used while in the 'Semi-Automatic' mode:
+*F1      = Toggle HELP display.
+*F2      = Toggle Configuration menu.
+*F5      = Dump primary screen image to disk file.
+ F8      = Toggle continuous drawing mode.
+ F9      = Select next random image algorithm.
+*Alt-F9  = Toggle between 'Automatic' and 'Semi-Automatic' mode.
+            A multi-tone chirp indicates 'Semi-Automatic' is
+            ready to begin image generation.
+ F10     = Draw current image algorithm while key is pressed.
+ Alt-F10 = Reinitialize the current image algorithm.
+*Shf-F10 = Select new group of image colors.
+*Ctl-F10 = Select new background colors.
+Various Alternate and Control keys can be used in 'Semi-Automatic'
+to manually select a specific image pattern for the F8 and F10 keys.
+Refer to IMAGE SIZE configuration menus to match keys to images.
+NOTE: keys marked with '*' are also active outside of the 
+      'Semi-Automatic' mode of operation.
+Each 'Fade' effect can be manually invoked by pressing the
+specific keys listed in the FADE ENABLE configuration menu.
+The P (Pan/Scroll fade) key will induce a random fade effect
+when pressed in the 'semi-auto' mode.
+Some fades are only available in VGA mode.
+The following keys have special effects and are not listed
+in the FADE ENABLE configuration menu:
+H = Hold current display from fading (ignored in 'semi-auto').
+N = Next display now, immediate clear of image display.
+Press these letters without the ALT or CTL shift keys.
+These are effective in 'Automatic' and 'Semi-Automatic' modes.
+The F2 key activates the Configuration Subsystem. From it's menu
+the image size of each drawing algorithm can be adjusted, and
+specific 'fades' can be disabled. The number of images that are
+displayed in the Auto Mode can be customized. It also allows the
+saving or loading of files containing DAZZLE command scripts.
+This file contains information from the configuration menus. It
+can be specified on the command line when DAZZLE is invoked to
+cause the program to operate with the saved options. The program
+will automatically load a file MTDAZZLE.DZL if it can be found.
+Using an "*" character on the command line will prevent loading
+of this file.
+This is a text file that can be edited. It contains comments
+about the meaning of it's entries. It is suggested that you print
+one of these files and review it while viewing the menu presented
+by the F2 key.
+The TAB key initiates FREEZE mode, halting all activity within
+the program.  While in FREEZE mode the TAB key toggles between
+cycling and non-cycling of the colors of the displayed image.
+Press SPACE to exit the FREEZE mode, and restore normal program
+operation (console beeps).
+HELP can be called when in FREEZE mode, but it will terminate
+the FREEZE mode.
+During the display press "+" or "-" to change the color cycling
+speed. In VGA mode press "Page Up" or "Page Down" to change the
+color cycling step range.
+Please refer to DAZZLE.DOC for far more details.
+Enter the IMAGE SIZE values desired in the following fields:
+   (KEY = Alt-key input for image in 'Semi-Auto' mode)
+ KEY   NAME          SIZE          KEY   NAME          SIZE
+Enter the IMAGE SIZE values desired in the following fields:
+   (KEY = Ctl-key input for image in 'Semi-Auto' mode)
+ KEY   NAME          SIZE          KEY   NAME          SIZE
+        Fades may be enabled (y) or disabled (n)
+   Key Fade           Enable    Key Fade           Enable
+               Auto Mode Display Customization
+ Minimum images per display       Maximum images per display 
+ Pause delay before start of FADE in seconds
+ These numbers will be internally adjusted if in Alternate or 
+ Mad mode, or using an EGA.
+                         File Access Menu
+ Select Mode : Save/Load [ ]            File Name :
+ Path :
+      Press F3 for disk directory,  F4 to execute Save/Load.
+ Note that the disk head is no longer parked in powerdown position.
+Memory limit, dirlist truncated
+[end]
+[PgUp]
+[PgUp/PgDn]
+[PgDn]
+At least one function must be set to more than zero!
+%%%du
+Error trying to get Current Directory
+Error changing directory
+Unable to open file for read
+EXIST
+READ ONLY
+NOT FOUND
+deIRead can't open file
+deIRead file seek error looking for serialize data
+deIRead can't read serialize data
+deIRead file seek error, pass 2
+deGetIData: can't locate file for image load.
+deGetIData: Program name corrupted.
+deGetIData: missing image data.
+Memory exhausted during image processing.
+Image size too large.
+Image size too small.
+Not enough memory for image file!
+Invalid image file header.
+Not a usable color image file format.
+Illegal VGA format image file.
+Image Data Corrupted.
+Image not compatible with your display
+Mono EGA is not supported
+$Mono VGA is not supported
+$Color EGA or VGA required, sorry
+$ Hard disk 1 $and 2 $retracted for your convenience.
+malloc error for hptr in DAZPCX.
+daz_%04d.pcx
+Sorry, can't create output PCX file.
+Sorry, PCX filename range exceeded.
+Sorry, can't open output PCX file.
+malloc error for stdhdr in PackPcxFile.
+malloc error for vga_palette in PackPcxFile.
+								
+  !!""##$$%%&&''(())**++,,--..//0123456789:;<=>?
+ Program aborting in text extraction routines!
+This copy may be corrupted, write us for a good copy.
+REASON: %s 
+%s	- %s :  
+%s	- %s
+DAZZLE.DOC
+getLZH data missing
+getLZH file access error
+getLZH file seek error
+getLZH cannot read textsize from input
+Extracting 
+Extracted 
+error during close of output file
+)DOMAIN
+OVERFLOW
+UNDERFLOW
+TLOSS
+PLOSS
+)Domain
+Denormal
+Divide by 0
+Overflow
+Underflow
+Partial loss of precision
+Stack fault
+Floating point error: %s.
+%s: %s error
+         !!!!!                  
+@@@@@@@@@@@@@@@
+@@@@@@@
+@@@@@@
+@@@@ 
+(null)
+COMPAQ
+print scanf : floating point formats not linked
+P)P)P)

@@ -13,7 +13,7 @@ section/energy data from a pre-analysis pass.
 
 ## Quick Start
 
-Run everything from `dazzle_py/`. Simplest possible invocation:
+Run everything from the repo root. Simplest possible invocation:
 
 ```
 python3 render.py song.wav out.mp4
@@ -125,7 +125,7 @@ User-supplied analysis files are never touched.
 ## Project Structure
 
 ```
-dazzle_py/
+dazzle-video-maker-py/       (repo root)
   render.py                  # main CLI / scene scheduler / ffmpeg pipeline
   audio.py                   # AudioFeatures: load + interpolate + 3-band FFT
   analyze_audio.py           # vendored analyzer (beats, onsets, sections, …)
@@ -135,6 +135,12 @@ dazzle_py/
     _draw.py                 # shared line / polygon / circle primitives
     <effect>.py              # one file per effect
   build_effects_guide.py     # renders static HTML catalog of all effects
+  reference/                 # original binaries, decompile output, analysis
+    Dazzle 4.0/              # public-domain 1990 executable + docs
+    decompiled-v40/          # Ghidra decompile output
+    extracted-v40/           # extracted strings / artifacts
+    effects_analysis_v40.json
+  README.md                  # you are here
 ```
 
 ## Future Considerations

@@ -2,7 +2,7 @@
 
 Renders a short single-effect clip per registered effect (via render.py in
 --mode fixed), then emits an index.html that embeds each clip with its
-description. Run from the dazzle_py/ directory.
+description. Run from the repo root.
 
     python3 build_effects_guide.py [--output-dir DIR] [--audio WAV] [--length SEC]
 """

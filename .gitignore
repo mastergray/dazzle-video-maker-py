@@ -1,8 +1,8 @@
 # Rendered test outputs — large, fully regeneratable from render.py
-dazzle_py/test/*.mp4
-dazzle_py/test/*.mkv
-dazzle_py/test/*.webm
-dazzle_py/test/*.profile.json
+test/*.mp4
+test/*.mkv
+test/*.webm
+test/*.profile.json
 
 # Effects guide output — regeneratable via build_effects_guide.py
 effects-guide/
@@ -12,11 +12,15 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Ghidra projects — large binaries, regeneratable from the original EXE
-decompile/
-decompile-v40/
+# Archived/packaged copies of reference material
+reference/Dazzle 4.0.7z
+Dazzle 4.0.7z
 
-# External tool clones (these are their own repos, fetch as needed)
+# Ghidra projects — large binaries, regeneratable from the original EXE
+reference/decompile/
+reference/decompile-v40/
+
+# External tool clones (their own repos)
 tools/
 
 # Shareware binaries — not public domain, shouldn't be committed
@@ -25,11 +29,16 @@ DAZZLE50.ZIP
 DAZZLE.unpacked
 Dazzle 4.2/
 Dazzle 4.2.7z
+reference/DAZZLE50/
+reference/DAZZLE50.ZIP
+reference/DAZZLE.unpacked
+reference/Dazzle 4.2/
+reference/Dazzle 4.2.7z
 
 # Derivative work of shareware (decompile of 5.0) — keep local-only
-decompiled/
-extracted/
-effects_analysis.json
+reference/decompiled/
+reference/extracted/
+reference/effects_analysis.json
 
 # OS noise
 .DS_Store
