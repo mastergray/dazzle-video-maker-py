@@ -21,9 +21,9 @@ from post import REGISTRY as POST_REGISTRY, apply_post
 W, H = 320, 200
 
 
-def build_ffmpeg_cmd(audio_path, out_path, width, height, fps, crf):
+def build_ffmpeg_cmd(audio_path, out_path, width, height, fps, crf, ffmpeg_bin='ffmpeg'):
     return [
-        'ffmpeg', '-y',
+        ffmpeg_bin, '-y',
         '-f', 'rawvideo',
         '-pix_fmt', 'rgb24',
         '-s', f'{width}x{height}',
@@ -118,7 +118,8 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
            fixed_post=None, post_min=0, post_max=1,
            post_kwargs_by_effect=None,
            exclude_effects=None, exclude_post=None,
-           palette_name=None):
+           palette_name=None,
+           ffmpeg_bin='ffmpeg', ffprobe_bin='ffprobe'):
     """Render audio to MP4.
 
     mode='random': rotate through all 32 effects; each scene holds min_fx..max_fx
@@ -155,7 +156,8 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
     height = H * scale
 
     print(f'loading audio: {audio_path}')
-    af = AudioFeatures(audio_path, fps=fps, analysis_json=analysis_json)
+    af = AudioFeatures(audio_path, fps=fps, analysis_json=analysis_json,
+                       ffmpeg_bin=ffmpeg_bin, ffprobe_bin=ffprobe_bin)
     print(f'  duration={af.duration_sec:.2f}s frames={af.n_frames} sr={af.sr}')
     print(f'  beats={int(af.beat.sum())} downbeats={int(af.downbeat.sum())} peaks={int(af.peak.sum())} '
           f'sections={len(af.section_change_frames)} silence_frames={int(af.in_silence.sum())}')
@@ -222,7 +224,7 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
     last_switch_frame = 0
 
     ffmpeg = subprocess.Popen(
-        build_ffmpeg_cmd(audio_path, out_path, width, height, fps, crf),
+        build_ffmpeg_cmd(audio_path, out_path, width, height, fps, crf, ffmpeg_bin=ffmpeg_bin),
         stdin=subprocess.PIPE,
     )
 
@@ -453,6 +455,10 @@ def main():
     out_grp.add_argument('--analysis', default=None,
                          help='pre-computed audio analysis JSON (omit to auto-run analyzer; '
                               'auto-generated files are deleted after render)')
+    out_grp.add_argument('--ffmpeg', default='ffmpeg', dest='ffmpeg_bin',
+                         help='path to ffmpeg binary (default: ffmpeg on PATH)')
+    out_grp.add_argument('--ffprobe', default='ffprobe', dest='ffprobe_bin',
+                         help='path to ffprobe binary (default: ffprobe on PATH)')
 
     prof_grp = p.add_argument_group('profile')
     prof_grp.add_argument('--profile', default=None,
@@ -618,7 +624,8 @@ def main():
            fixed_post=args.post, post_min=args.post_min, post_max=args.post_max,
            post_kwargs_by_effect=_post_kwargs_by_effect,
            exclude_effects=args.exclude, exclude_post=args.exclude_post,
-           palette_name=args.palette)
+           palette_name=args.palette,
+           ffmpeg_bin=args.ffmpeg_bin, ffprobe_bin=args.ffprobe_bin)
 
 
 if __name__ == '__main__':
