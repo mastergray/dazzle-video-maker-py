@@ -206,6 +206,196 @@ def wave(buf: np.ndarray, frame_idx: int = 0,
     return out
 
 
+def xor(buf: np.ndarray, shift_x: int = 10, shift_y: int = 5,
+        frame_idx: int = 0, **_kw) -> np.ndarray:
+    """XOR the buffer with a shifted copy of itself.
+
+    Produces moiré interference patterns. The shift animates over time
+    so the interference pattern evolves.
+    """
+    dx = shift_x + int(frame_idx * 0.3) % 20
+    dy = shift_y + int(frame_idx * 0.2) % 15
+    shifted = np.roll(buf, shift=(dy, dx), axis=(0, 1))
+    return buf ^ shifted
+
+
+def drip(buf: np.ndarray, max_drip: int = 40, frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Shift each column down by a varying amount — gravity/rain effect.
+
+    Drip amounts are deterministic per-column but evolve with frame_idx
+    so the drip pattern slowly changes over time.
+    """
+    H, W = buf.shape
+    out = np.empty_like(buf)
+    seed_arr = np.arange(W, dtype=np.float64) * 7.3 + 1.1
+    drips = ((np.sin(seed_arr + frame_idx * 0.02) * 0.5 + 0.5) * max_drip).astype(int)
+    for x in range(W):
+        out[:, x] = np.roll(buf[:, x], drips[x])
+    return out
+
+
+def starburst(buf: np.ndarray, n_rays: int = 16, thickness: int = 1, **_kw) -> np.ndarray:
+    """Radial lines from center — rays mask to palette index 0 (black).
+
+    Creates a starburst/sunburst overlay pattern on top of whatever
+    effects drew. Different from radial (which folds the image);
+    starburst OVERLAYS lines.
+    """
+    H, W = buf.shape
+    cy, cx = H / 2, W / 2
+    yy, xx = np.mgrid[:H, :W]
+    angles = np.arctan2(yy - cy, xx - cx)
+    # Create ray mask: pixels whose angle falls on a ray line.
+    ray_spacing = 2 * np.pi / n_rays
+    angle_mod = np.mod(angles, ray_spacing)
+    ray_width = thickness * ray_spacing / (2 * np.pi)
+    mask = (angle_mod < ray_width) | (angle_mod > ray_spacing - ray_width)
+    out = buf.copy()
+    out[mask] = 0
+    return out
+
+
+def mesh(buf: np.ndarray, spacing: int = 12, **_kw) -> np.ndarray:
+    """Grid overlay — darken pixels on a regular grid to index 0."""
+    out = buf.copy()
+    out[::spacing, :] = 0
+    out[:, ::spacing] = 0
+    return out
+
+
+def rectangles(buf: np.ndarray, n_rects: int = 8, frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Random rectangular block shuffle — cut the frame into blocks and rearrange.
+
+    Deterministic per seed but evolves slowly with frame_idx.
+    """
+    H, W = buf.shape
+    out = buf.copy()
+    rng = np.random.RandomState((frame_idx // 30) + 42)
+    for _ in range(n_rects):
+        bh = rng.randint(20, H // 3)
+        bw = rng.randint(20, W // 3)
+        y1 = rng.randint(0, H - bh)
+        x1 = rng.randint(0, W - bw)
+        y2 = rng.randint(0, H - bh)
+        x2 = rng.randint(0, W - bw)
+        # Swap two random blocks.
+        tmp = out[y1:y1 + bh, x1:x1 + bw].copy()
+        out[y1:y1 + bh, x1:x1 + bw] = out[y2:y2 + bh, x2:x2 + bw]
+        out[y2:y2 + bh, x2:x2 + bw] = tmp
+    return out
+
+
+def spiral_post(buf: np.ndarray, tightness: float = 0.15,
+                frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Logarithmic spiral coordinate remap.
+
+    Unlike twist (which rotates more at center), spiral maps pixels
+    along logarithmic spiral paths — produces a whirlpool/nautilus look.
+    """
+    H, W = buf.shape
+    cy, cx = H / 2, W / 2
+    yy, xx = np.mgrid[:H, :W]
+    dy = (yy - cy).astype(np.float64)
+    dx = (xx - cx).astype(np.float64)
+    radii = np.sqrt(dy * dy + dx * dx)
+    angles = np.arctan2(dy, dx)
+
+    phase = frame_idx * 0.02
+    new_angles = angles + tightness * np.log(np.maximum(radii, 1.0)) + phase
+
+    sx = (cx + radii * np.cos(new_angles)).astype(int)
+    sy = (cy + radii * np.sin(new_angles)).astype(int)
+    sx = np.clip(sx, 0, W - 1)
+    sy = np.clip(sy, 0, H - 1)
+    return buf[sy, sx]
+
+
+def wipe(buf: np.ndarray, direction: str = 'left',
+         frame_idx: int = 0, speed: float = 2.0, **_kw) -> np.ndarray:
+    """Animated directional wipe — edge sweeps across clearing to black.
+
+    The wipe position cycles so the pattern repeatedly reveals and clears.
+    """
+    H, W = buf.shape
+    out = buf.copy()
+    cycle_len = W if direction in ('left', 'right') else H
+    pos = int(frame_idx * speed) % (cycle_len * 2)
+    if pos > cycle_len:
+        pos = cycle_len * 2 - pos  # bounce back
+
+    if direction == 'left':
+        out[:, :pos] = 0
+    elif direction == 'right':
+        out[:, W - pos:] = 0
+    elif direction == 'down':
+        out[:pos, :] = 0
+    else:  # up
+        out[H - pos:, :] = 0
+    return out
+
+
+def movingbars(buf: np.ndarray, n_bars: int = 6, bar_width: int = 8,
+               direction: str = 'horizontal', frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Animated bars that slide across the frame, masking to black."""
+    H, W = buf.shape
+    out = buf.copy()
+    if direction == 'horizontal':
+        spacing = H // max(1, n_bars)
+        offset = int(frame_idx * 0.5) % spacing
+        for i in range(n_bars):
+            y = (i * spacing + offset) % H
+            y_end = min(H, y + bar_width)
+            out[y:y_end, :] = 0
+    else:
+        spacing = W // max(1, n_bars)
+        offset = int(frame_idx * 0.5) % spacing
+        for i in range(n_bars):
+            x = (i * spacing + offset) % W
+            x_end = min(W, x + bar_width)
+            out[:, x:x_end] = 0
+    return out
+
+
+def linewipe(buf: np.ndarray, n_lines: int = 10,
+             frame_idx: int = 0, speed: float = 1.0, **_kw) -> np.ndarray:
+    """Horizontal line-based wipe — lines sweep left-to-right at staggered speeds."""
+    H, W = buf.shape
+    out = buf.copy()
+    spacing = max(1, H // n_lines)
+    for i in range(n_lines):
+        y = i * spacing
+        if y >= H:
+            break
+        # Each line has a different phase so they stagger.
+        pos = int((frame_idx * speed + i * 17) % (W * 2))
+        if pos > W:
+            pos = W * 2 - pos
+        y_end = min(H, y + spacing)
+        out[y:y_end, :pos] = 0
+    return out
+
+
+def randomize(buf: np.ndarray, block_size: int = 20,
+              frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Randomly rearrange blocks of the buffer — shuffled mosaic."""
+    H, W = buf.shape
+    out = buf.copy()
+    ny = H // block_size
+    nx = W // block_size
+    if ny < 2 or nx < 2:
+        return buf
+    rng = np.random.RandomState((frame_idx // 15) + 7)
+    blocks = [(r, c) for r in range(ny) for c in range(nx)]
+    shuffled = list(blocks)
+    rng.shuffle(shuffled)
+    for (r1, c1), (r2, c2) in zip(blocks, shuffled):
+        y1, x1 = r1 * block_size, c1 * block_size
+        y2, x2 = r2 * block_size, c2 * block_size
+        out[y1:y1 + block_size, x1:x1 + block_size] = \
+            buf[y2:y2 + block_size, x2:x2 + block_size]
+    return out
+
+
 # Registry: name → (function, default_kwargs).
 REGISTRY = {
     'mirror_h':       (mirror_h, {}),
@@ -218,6 +408,16 @@ REGISTRY = {
     'twist':          (twist, {'amount': 0.8}),
     'scroll':         (scroll, {'speed_x': 1.0, 'speed_y': 0.0}),
     'wave':           (wave, {'amplitude': 8.0, 'frequency': 0.04, 'speed': 0.1}),
+    'xor':            (xor, {'shift_x': 10, 'shift_y': 5}),
+    'drip':           (drip, {'max_drip': 40}),
+    'starburst':      (starburst, {'n_rays': 16, 'thickness': 1}),
+    'mesh':           (mesh, {'spacing': 12}),
+    'rectangles':     (rectangles, {'n_rects': 8}),
+    'spiral':         (spiral_post, {'tightness': 0.15}),
+    'wipe':           (wipe, {'direction': 'left', 'speed': 2.0}),
+    'movingbars':     (movingbars, {'n_bars': 6, 'bar_width': 8, 'direction': 'horizontal'}),
+    'linewipe':       (linewipe, {'n_lines': 10, 'speed': 1.0}),
+    'randomize':      (randomize, {'block_size': 20}),
 }
 
 
