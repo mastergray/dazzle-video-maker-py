@@ -319,10 +319,16 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
             'scale': scale,
             'crf': crf,
             'seed': int(seed),
-            **({'fixed_effects': list(fixed_effects)}
+            'palette': palette_name or 'random',
+            **({'fixed_effects': list(fixed_effects),
+                'fixed_post': list(fixed_post) if fixed_post else []}
                if mode == 'fixed'
-               else {'min_fx': min_fx, 'max_fx': max_fx, 'overlap': max_overlap}),
+               else {'min_fx': min_fx, 'max_fx': max_fx, 'overlap': max_overlap,
+                     'post_min': post_min, 'post_max': post_max,
+                     'exclude_effects': list(exclude_effects) if exclude_effects else [],
+                     'exclude_post': list(exclude_post) if exclude_post else []}),
         },
+        'post_params': post_kwargs_by_effect or {},
         'audio_analysis_summary': {
             'beats': int(af.beat.sum()),
             'downbeats': int(af.downbeat.sum()),
