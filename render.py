@@ -116,7 +116,7 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
            mode='random', min_fx=4, max_fx=5, max_overlap=0,
            fixed_effects=None, profile_path=None,
            fixed_post=None, post_min=0, post_max=1,
-           post_kwargs=None,
+           post_kwargs_by_effect=None,
            exclude_effects=None, exclude_post=None):
     """Render audio to MP4.
 
@@ -264,8 +264,9 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
             # Apply post-production effects (mirror/radial/etc.) to the
             # paletted buffer before palette mapping.
             post_buf = buffer
-            pkw = post_kwargs or {}
+            pkw_map = post_kwargs_by_effect or {}
             for pname in scene_post:
+                pkw = pkw_map.get(pname, {})
                 post_buf = apply_post(post_buf, pname, frame_idx=i, **pkw)
 
             rgb = cur_pal[post_buf]
@@ -463,6 +464,40 @@ def main():
                           help='[wave] sine frequency (default 0.04; higher = more ripples)')
     post_grp.add_argument('--wave-speed', type=float, default=0.1,
                           help='[wave] animation speed (default 0.1)')
+    post_grp.add_argument('--xor-shift-x', type=int, default=10,
+                          help='[xor] horizontal XOR offset (default 10)')
+    post_grp.add_argument('--xor-shift-y', type=int, default=5,
+                          help='[xor] vertical XOR offset (default 5)')
+    post_grp.add_argument('--drip-max', type=int, default=40,
+                          help='[drip] max column shift in pixels (default 40)')
+    post_grp.add_argument('--starburst-rays', type=int, default=16,
+                          help='[starburst] number of radial rays (default 16)')
+    post_grp.add_argument('--starburst-thickness', type=int, default=1,
+                          help='[starburst] ray width (default 1; higher = thicker rays)')
+    post_grp.add_argument('--mesh-spacing', type=int, default=12,
+                          help='[mesh] grid line spacing in pixels (default 12)')
+    post_grp.add_argument('--rectangles-n', type=int, default=8,
+                          help='[rectangles] number of block swaps per frame (default 8)')
+    post_grp.add_argument('--spiral-tightness', type=float, default=0.15,
+                          help='[spiral] coil tightness (default 0.15; higher = tighter)')
+    post_grp.add_argument('--wipe-direction', default='left',
+                          choices=['left', 'right', 'up', 'down'],
+                          help='[wipe] sweep direction (default left)')
+    post_grp.add_argument('--wipe-speed', type=float, default=2.0,
+                          help='[wipe] animation speed (default 2.0)')
+    post_grp.add_argument('--movingbars-n', type=int, default=6,
+                          help='[movingbars] number of bars (default 6)')
+    post_grp.add_argument('--movingbars-width', type=int, default=8,
+                          help='[movingbars] bar width in pixels (default 8)')
+    post_grp.add_argument('--movingbars-direction', default='horizontal',
+                          choices=['horizontal', 'vertical'],
+                          help='[movingbars] bar orientation (default horizontal)')
+    post_grp.add_argument('--linewipe-n', type=int, default=10,
+                          help='[linewipe] number of staggered wipe lines (default 10)')
+    post_grp.add_argument('--linewipe-speed', type=float, default=1.0,
+                          help='[linewipe] animation speed (default 1.0)')
+    post_grp.add_argument('--randomize-block-size', type=int, default=20,
+                          help='[randomize] shuffle block size in pixels (default 20)')
     args = p.parse_args()
 
     # Mode-specific constraint validation
@@ -506,13 +541,27 @@ def main():
         base, _ = os.path.splitext(args.output)
         profile_path = base + '.profile.json'
 
-    post_kwargs = {
-        'nx': args.tile_nx, 'ny': args.tile_ny,
-        'n': args.radial_n,  # shared by radial + kaleidoscope
-        'amount': args.twist_amount,
-        'speed_x': args.scroll_speed_x, 'speed_y': args.scroll_speed_y,
-        'amplitude': args.wave_amplitude, 'frequency': args.wave_frequency,
-        'speed': args.wave_speed,
+    # Per-effect kwargs to avoid name collisions (direction, speed are used by
+    # multiple effects with different meanings/valid values).
+    _post_kwargs_by_effect = {
+        'tile':         {'nx': args.tile_nx, 'ny': args.tile_ny},
+        'radial':       {'n': args.radial_n},
+        'kaleidoscope': {'n': getattr(args, 'kaleidoscope_n', args.radial_n)},
+        'twist':        {'amount': args.twist_amount},
+        'scroll':       {'speed_x': args.scroll_speed_x, 'speed_y': args.scroll_speed_y},
+        'wave':         {'amplitude': args.wave_amplitude, 'frequency': args.wave_frequency,
+                         'speed': args.wave_speed},
+        'xor':          {'shift_x': args.xor_shift_x, 'shift_y': args.xor_shift_y},
+        'drip':         {'max_drip': args.drip_max},
+        'starburst':    {'n_rays': args.starburst_rays, 'thickness': args.starburst_thickness},
+        'mesh':         {'spacing': args.mesh_spacing},
+        'rectangles':   {'n_rects': args.rectangles_n},
+        'spiral':       {'tightness': args.spiral_tightness},
+        'wipe':         {'direction': args.wipe_direction, 'speed': args.wipe_speed},
+        'movingbars':   {'n_bars': args.movingbars_n, 'bar_width': args.movingbars_width,
+                         'direction': args.movingbars_direction},
+        'linewipe':     {'n_lines': args.linewipe_n, 'speed': args.linewipe_speed},
+        'randomize':    {'block_size': args.randomize_block_size},
     }
     render(args.audio, args.output,
            scale=args.scale, fps=args.fps, seed=args.seed,
@@ -521,7 +570,7 @@ def main():
            max_overlap=args.overlap, fixed_effects=args.effects,
            profile_path=profile_path,
            fixed_post=args.post, post_min=args.post_min, post_max=args.post_max,
-           post_kwargs=post_kwargs,
+           post_kwargs_by_effect=_post_kwargs_by_effect,
            exclude_effects=args.exclude, exclude_post=args.exclude_post)
 
 
