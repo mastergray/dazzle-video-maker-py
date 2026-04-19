@@ -533,6 +533,35 @@ def ziti(buf: np.ndarray, curvature: float = 0.3,
     return buf[yy, new_x]
 
 
+def juggle_palette(buf: np.ndarray, mode: str = 'shuffle',
+                   frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Palette juggling — remap buffer indices to scramble colors.
+
+    Unlike other post effects which transform pixel POSITIONS, juggle
+    transforms pixel VALUES (palette indices). The spatial pattern stays
+    identical; the colors change. This is the v5.0 "Juggle palette" mode.
+
+    Modes:
+      shuffle  randomly reorder palette indices (changes slowly over time)
+      invert   flip indices (255-i) — dark becomes bright, vice versa
+      reverse  reverse the palette order — color ramp runs backward
+      rotate   shift all indices by a frame-varying offset
+    """
+    remap = np.arange(256, dtype=np.uint8)
+    if mode == 'shuffle':
+        rng = np.random.RandomState((frame_idx // 30) + 5)
+        rng.shuffle(remap[1:])
+    elif mode == 'invert':
+        remap[1:] = (256 - remap[1:]) % 256
+        remap[remap == 0] = 1  # avoid mapping to background
+    elif mode == 'reverse':
+        remap[1:] = remap[1:][::-1]
+    elif mode == 'rotate':
+        shift = (frame_idx * 3) % 255
+        remap[1:] = ((remap[1:] - 1 + shift) % 255) + 1
+    return remap[buf]
+
+
 # Registry: name → (function, default_kwargs).
 REGISTRY = {
     'mirror_h':       (mirror_h, {}),
@@ -560,6 +589,7 @@ REGISTRY = {
     'umbra':          (umbra, {'strength': 0.7}),
     'tetrys':         (tetrys, {'block_size': 16}),
     'ziti':           (ziti, {'curvature': 0.3}),
+    'juggle':         (juggle_palette, {'mode': 'shuffle'}),
 }
 
 

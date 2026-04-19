@@ -14,7 +14,7 @@ import time
 import numpy as np
 
 from audio import AudioFeatures
-from palette import rainbow_palette, cycle
+from palette import rainbow_palette, cycle, PALETTES
 from effects import REGISTRY
 from post import REGISTRY as POST_REGISTRY, apply_post
 
@@ -117,7 +117,8 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
            fixed_effects=None, profile_path=None,
            fixed_post=None, post_min=0, post_max=1,
            post_kwargs_by_effect=None,
-           exclude_effects=None, exclude_post=None):
+           exclude_effects=None, exclude_post=None,
+           palette_name=None):
     """Render audio to MP4.
 
     mode='random': rotate through all 32 effects; each scene holds min_fx..max_fx
@@ -173,7 +174,18 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
           f'min_scene={_min_scene_sec}s max_scene={_max_scene_sec}s')
 
     buffer = np.zeros((H, W), dtype=np.uint8)
-    palette = rainbow_palette()
+    palette_names = list(PALETTES.keys())
+
+    def _pick_palette():
+        if palette_name:
+            return palette_name, PALETTES[palette_name]()
+        name = palette_names[int(rng.integers(len(palette_names)))]
+        return name, PALETTES[name]()
+
+    if mode == 'fixed' and palette_name:
+        cur_pal_name, palette = palette_name, PALETTES[palette_name]()
+    else:
+        cur_pal_name, palette = _pick_palette()
     pal_shift = 0
 
     prev_names = []
@@ -203,9 +215,10 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
         active = _new_set()
         scene_post = _pick_post()
     prev_names = [n for n, _ in active]
-    scene_log = [{'t_sec': 0.0, 'effects': list(prev_names), 'post': list(scene_post)}]
+    scene_log = [{'t_sec': 0.0, 'effects': list(prev_names), 'post': list(scene_post),
+                  'palette': cur_pal_name}]
     post_label = f' post={scene_post}' if scene_post else ''
-    print(f'  [0.00s] {mode} -> {prev_names}{post_label}')
+    print(f'  [0.00s] {mode} -> {prev_names}{post_label} palette={cur_pal_name}')
     last_switch_frame = 0
 
     ffmpeg = subprocess.Popen(
@@ -238,14 +251,14 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
                 active = _new_set()
                 prev_names = [n for n, _ in active]
                 scene_post = _pick_post()
+                cur_pal_name, palette = _pick_palette()
                 buffer[:] = 0
-                palette = rainbow_palette()
                 if rng.random() < 0.5:
                     palette = cycle(palette, int(rng.integers(1, 255)))
                 scene_log.append({'t_sec': round(t_sec, 3), 'effects': list(prev_names),
-                                  'post': list(scene_post)})
+                                  'post': list(scene_post), 'palette': cur_pal_name})
                 post_label = f' post={scene_post}' if scene_post else ''
-                print(f'  [{t_sec:5.2f}s] {mode} -> {prev_names}{post_label}')
+                print(f'  [{t_sec:5.2f}s] {mode} -> {prev_names}{post_label} palette={cur_pal_name}')
                 last_switch_frame = i
 
             feats = af.features_at(i)
@@ -385,6 +398,10 @@ def main():
                           help='[fixed mode] post-production effect(s) to apply, in order. '
                                'Multiple = stacked (e.g. --post mirror_quad wave). '
                                'See full list in epilog.')
+    mode_grp.add_argument('--palette', default=None,
+                          choices=sorted(PALETTES.keys()),
+                          help='[fixed mode] color palette (default: random per scene in '
+                               'random mode, rainbow in fixed mode)')
 
     rand_grp = p.add_argument_group('random-mode options')
     rand_grp.add_argument('--min', dest='min_fx', type=int, default=4,
@@ -512,6 +529,9 @@ def main():
                           help='[tetrys] falling block column width (default 16)')
     post_grp.add_argument('--ziti-curvature', type=float, default=0.3,
                           help='[ziti] cylinder curvature (default 0.3; higher=more curved)')
+    post_grp.add_argument('--juggle-mode', default='shuffle',
+                          choices=['shuffle', 'invert', 'reverse', 'rotate'],
+                          help='[juggle] palette manipulation mode (default shuffle)')
     args = p.parse_args()
 
     # Mode-specific constraint validation
@@ -581,6 +601,7 @@ def main():
         'umbra':        {'strength': args.umbra_strength},
         'tetrys':       {'block_size': args.tetrys_block_size},
         'ziti':         {'curvature': args.ziti_curvature},
+        'juggle':       {'mode': args.juggle_mode},
     }
     render(args.audio, args.output,
            scale=args.scale, fps=args.fps, seed=args.seed,
@@ -590,7 +611,8 @@ def main():
            profile_path=profile_path,
            fixed_post=args.post, post_min=args.post_min, post_max=args.post_max,
            post_kwargs_by_effect=_post_kwargs_by_effect,
-           exclude_effects=args.exclude, exclude_post=args.exclude_post)
+           exclude_effects=args.exclude, exclude_post=args.exclude_post,
+           palette_name=args.palette)
 
 
 if __name__ == '__main__':
