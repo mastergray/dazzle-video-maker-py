@@ -17,6 +17,8 @@ reference/Dazzle 4.0.7z
 Dazzle 4.0.7z
 
 # Ghidra projects — large binaries, regeneratable from the original EXE
+decompile/
+decompile-v40/
 reference/decompile/
 reference/decompile-v40/
 
@@ -36,6 +38,9 @@ reference/Dazzle 4.2/
 reference/Dazzle 4.2.7z
 
 # Derivative work of shareware (decompile of 5.0) — keep local-only
+decompiled/
+extracted/
+effects_analysis.json
 reference/decompiled/
 reference/extracted/
 reference/effects_analysis.json
