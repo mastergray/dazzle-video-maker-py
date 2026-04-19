@@ -107,6 +107,22 @@ python3 render.py song.wav mixed.mp4
 python3 render.py song.wav double.mp4 --post-min 2 --post-max 2
 ```
 
+### Excluding effects
+
+```
+# No diagonal effects in the random pool
+python3 render.py song.wav out.mp4 --exclude diag1 diag2 diag3 diag4
+
+# Only symmetry-based post effects (exclude spatial + animated)
+python3 render.py song.wav out.mp4 --exclude-post tile twist scroll wave
+
+# Combine: no line-based effects, no animated post, always post
+python3 render.py song.wav out.mp4 \
+    --exclude lines diag1 diag2 diag3 diag4 grid bars \
+    --exclude-post scroll wave \
+    --post-min 1 --post-max 1
+```
+
 ### Other options
 
 ```
@@ -140,6 +156,8 @@ python3 build_effects_guide.py --output-dir ./effects-guide
 - `--overlap N` — max effects carried from previous scene (default 0)
 - `--post-min N` — minimum post effects per scene (default 0)
 - `--post-max N` — maximum post effects per scene (default 1)
+- `--exclude NAME [NAME ...]` — remove specific effects from the random pool
+- `--exclude-post NAME [NAME ...]` — remove specific post effects from the random pool
 
 **Output / encoding**
 - `--scale N` — upscale factor from 320×200 (default 6 → 1920×1200)
