@@ -257,7 +257,7 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
             # paletted buffer before palette mapping.
             post_buf = buffer
             for pname in scene_post:
-                post_buf = apply_post(post_buf, pname)
+                post_buf = apply_post(post_buf, pname, frame_idx=i)
 
             rgb = cur_pal[post_buf]
             frame = scale_frame(rgb, scale) if scale != 1 else rgb

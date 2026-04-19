@@ -101,21 +101,132 @@ def radial(buf: np.ndarray, n: int = 6) -> np.ndarray:
     return out
 
 
+def tile(buf: np.ndarray, nx: int = 2, ny: int = 2) -> np.ndarray:
+    """Repeat the buffer in an nx×ny grid, scaling down to fit the original size.
+
+    tile(2,2) = the whole pattern appears 4 times at quarter size.
+    tile(3,3) = 9 copies. Creates fractal-like recursive visual density.
+    """
+    H, W = buf.shape
+    # Downsample to tile size via nearest-neighbour.
+    th, tw = H // ny, W // nx
+    if th < 2 or tw < 2:
+        return buf
+    small = buf[::ny, ::nx][:th, :tw]
+    # Tile the small version to fill the frame.
+    out = np.tile(small, (ny, nx))
+    return out[:H, :W]
+
+
+def kaleidoscope(buf: np.ndarray, n: int = 6) -> np.ndarray:
+    """N-fold kaleidoscope: like radial but alternating wedges are mirrored.
+
+    Produces true kaleidoscope symmetry (like looking through a toy
+    kaleidoscope) rather than pure rotational copies.
+    """
+    H, W = buf.shape
+    cy, cx = H / 2, W / 2
+    yy, xx = np.mgrid[:H, :W]
+    dy = yy - cy
+    dx = xx - cx
+    angles = np.arctan2(dy, dx)
+    radii = np.sqrt(dy * dy + dx * dx)
+
+    wedge_angle = 2 * np.pi / n
+    folded = np.mod(angles, 2 * np.pi)
+    wedge_idx = (folded / wedge_angle).astype(int)
+    folded = np.mod(folded, wedge_angle)
+    # Mirror odd wedges (flip the angle within the wedge).
+    odd = (wedge_idx % 2) == 1
+    folded[odd] = wedge_angle - folded[odd]
+
+    sx = (cx + radii * np.cos(folded)).astype(int)
+    sy = (cy + radii * np.sin(folded)).astype(int)
+    sx = np.clip(sx, 0, W - 1)
+    sy = np.clip(sy, 0, H - 1)
+    return buf[sy, sx]
+
+
+def twist(buf: np.ndarray, amount: float = 0.8) -> np.ndarray:
+    """Polar twist: pixels near center rotate more than edges.
+
+    Creates a vortex/pinwheel distortion. amount controls the total
+    rotation at center in radians.
+    """
+    H, W = buf.shape
+    cy, cx = H / 2, W / 2
+    yy, xx = np.mgrid[:H, :W]
+    dy = (yy - cy).astype(np.float64)
+    dx = (xx - cx).astype(np.float64)
+    radii = np.sqrt(dy * dy + dx * dx)
+    max_r = np.sqrt(cy * cy + cx * cx)
+    angles = np.arctan2(dy, dx)
+
+    # Twist: rotation decreases linearly with radius.
+    twist_angle = amount * (1.0 - radii / max_r)
+    new_angles = angles + twist_angle
+
+    sx = (cx + radii * np.cos(new_angles)).astype(int)
+    sy = (cy + radii * np.sin(new_angles)).astype(int)
+    sx = np.clip(sx, 0, W - 1)
+    sy = np.clip(sy, 0, H - 1)
+    return buf[sy, sx]
+
+
+def scroll(buf: np.ndarray, frame_idx: int = 0,
+           speed_x: float = 1.0, speed_y: float = 0.0) -> np.ndarray:
+    """Continuously scroll the buffer, wrapping at edges.
+
+    Offset accumulates with frame_idx so the pattern slides across the
+    frame over time. speed_x/speed_y in pixels per frame.
+    """
+    dx = int(frame_idx * speed_x) % buf.shape[1]
+    dy = int(frame_idx * speed_y) % buf.shape[0]
+    return np.roll(buf, shift=(dy, dx), axis=(0, 1))
+
+
+def wave(buf: np.ndarray, frame_idx: int = 0,
+         amplitude: float = 8.0, frequency: float = 0.04,
+         speed: float = 0.1) -> np.ndarray:
+    """Sine-wave horizontal displacement per row.
+
+    Each row shifts left/right by a sine function of its y-position,
+    animated over time via frame_idx. Creates a wavy/underwater look.
+    """
+    H, W = buf.shape
+    out = buf.copy()
+    phase = frame_idx * speed
+    for y in range(H):
+        dx = int(amplitude * np.sin(frequency * y + phase))
+        if dx:
+            out[y] = np.roll(buf[y], dx)
+    return out
+
+
 # Registry: name → (function, default_kwargs).
-# Functions with no extra args get empty dict; parameterised ones include defaults.
 REGISTRY = {
     'mirror_h':       (mirror_h, {}),
     'mirror_v':       (mirror_v, {}),
     'mirror_quad':    (mirror_quad, {}),
     'mirror_diamond': (mirror_diamond, {}),
     'radial':         (radial, {'n': 6}),
+    'tile':           (tile, {'nx': 2, 'ny': 2}),
+    'kaleidoscope':   (kaleidoscope, {'n': 6}),
+    'twist':          (twist, {'amount': 0.8}),
+    'scroll':         (scroll, {'speed_x': 1.0, 'speed_y': 0.0}),
+    'wave':           (wave, {'amplitude': 8.0, 'frequency': 0.04, 'speed': 0.1}),
 }
 
 
-def apply_post(buf: np.ndarray, name: str, **kwargs) -> np.ndarray:
+def apply_post(buf: np.ndarray, name: str, frame_idx: int = 0, **kwargs) -> np.ndarray:
     """Look up and apply a named post effect."""
     if name not in REGISTRY:
         raise ValueError(f'unknown post effect: {name!r}; valid: {list(REGISTRY.keys())}')
     fn, defaults = REGISTRY[name]
     merged = {**defaults, **kwargs}
+    # Pass frame_idx to effects that accept it (scroll, wave).
+    import inspect
+    sig = inspect.signature(fn)
+    if 'frame_idx' in sig.parameters:
+        merged['frame_idx'] = frame_idx
     return fn(buf, **merged)
