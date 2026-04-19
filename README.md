@@ -76,6 +76,41 @@ python3 render.py song.wav scroll.mp4 --mode fixed --effects diag1 diag3 \
     --post scroll --scroll-speed-x 0 --scroll-speed-y 2
 ```
 
+### More post effects
+
+```
+# XOR interference pattern
+python3 render.py song.wav xor.mp4 --mode fixed --effects hexagon boxes --post xor
+
+# Column drip — heavy gravity distortion
+python3 render.py song.wav drip.mp4 --mode fixed --effects lotsadots puffs \
+    --post drip --drip-max 80
+
+# 32 thick starburst rays
+python3 render.py song.wav star.mp4 --mode fixed --effects sierpinski puffs \
+    --post starburst --starburst-rays 32 --starburst-thickness 2
+
+# Tight mesh grid overlay
+python3 render.py song.wav mesh.mp4 --mode fixed --effects hexagon boxes \
+    --post mesh --mesh-spacing 6
+
+# Logarithmic spiral remap
+python3 render.py song.wav spiral.mp4 --mode fixed --effects spiral sweep \
+    --post spiral --spiral-tightness 0.25
+
+# Vertical moving bars
+python3 render.py song.wav bars.mp4 --mode fixed --effects tunnel hexagon \
+    --post movingbars --movingbars-direction vertical --movingbars-n 10
+
+# Small-block randomize (fine grain mosaic)
+python3 render.py song.wav mosaic.mp4 --mode fixed --effects hexagon spiral \
+    --post randomize --randomize-block-size 10
+
+# Downward wipe
+python3 render.py song.wav wipe.mp4 --mode fixed --effects boxes ellipse \
+    --post wipe --wipe-direction down --wipe-speed 3
+```
+
 ### Stacking post effects
 
 Post effects chain — each transforms the output of the previous. Order matters.
@@ -92,6 +127,14 @@ python3 render.py song.wav combo2.mp4 --mode fixed --effects sierpinski puffs \
 # 8-fold kaleidoscope that scrolls continuously
 python3 render.py song.wav combo3.mp4 --mode fixed --effects zigzags streamer \
     --post kaleidoscope scroll --kaleidoscope-n 8
+
+# Starburst mask + drip distortion
+python3 render.py song.wav combo4.mp4 --mode fixed --effects hexagon puffs \
+    --post starburst drip --starburst-rays 24
+
+# XOR interference then mirror for symmetric moiré
+python3 render.py song.wav combo5.mp4 --mode fixed --effects spiral boxes \
+    --post xor mirror_quad
 ```
 
 ### Random mode with post effects
@@ -113,13 +156,19 @@ python3 render.py song.wav double.mp4 --post-min 2 --post-max 2
 # No diagonal effects in the random pool
 python3 render.py song.wav out.mp4 --exclude diag1 diag2 diag3 diag4
 
-# Only symmetry-based post effects (exclude spatial + animated)
-python3 render.py song.wav out.mp4 --exclude-post tile twist scroll wave
+# Only symmetry-based post effects (exclude everything else)
+python3 render.py song.wav out.mp4 \
+    --exclude-post tile twist scroll wave xor drip starburst mesh \
+               rectangles spiral wipe movingbars linewipe randomize
 
-# Combine: no line-based effects, no animated post, always post
+# Only want mirror/kaleidoscope post, no mask/wipe effects
+python3 render.py song.wav out.mp4 \
+    --exclude-post starburst mesh movingbars linewipe wipe drip randomize rectangles
+
+# Combine: no line-based effects, no animated/mask post, always post
 python3 render.py song.wav out.mp4 \
     --exclude lines diag1 diag2 diag3 diag4 grid bars \
-    --exclude-post scroll wave \
+    --exclude-post scroll wave wipe movingbars linewipe drip \
     --post-min 1 --post-max 1
 ```
 
@@ -179,6 +228,21 @@ python3 build_effects_guide.py --output-dir ./effects-guide
 - `--wave-amplitude N` — max displacement pixels (default 8)
 - `--wave-frequency N` — sine frequency (default 0.04)
 - `--wave-speed N` — animation speed (default 0.1)
+- `--xor-shift-x N` / `--xor-shift-y N` — XOR offset (default 10, 5)
+- `--drip-max N` — max column shift pixels (default 40)
+- `--starburst-rays N` — radial ray count (default 16)
+- `--starburst-thickness N` — ray width (default 1)
+- `--mesh-spacing N` — grid line spacing pixels (default 12)
+- `--rectangles-n N` — block swaps per frame (default 8)
+- `--spiral-tightness N` — coil tightness (default 0.15)
+- `--wipe-direction {left,right,up,down}` — sweep direction (default left)
+- `--wipe-speed N` — animation speed (default 2.0)
+- `--movingbars-n N` — bar count (default 6)
+- `--movingbars-width N` — bar width pixels (default 8)
+- `--movingbars-direction {horizontal,vertical}` — bar orientation (default horizontal)
+- `--linewipe-n N` — staggered wipe lines (default 10)
+- `--linewipe-speed N` — animation speed (default 1.0)
+- `--randomize-block-size N` — shuffle block size pixels (default 20)
 
 ## Modes
 
@@ -207,13 +271,14 @@ For a visual catalog, run `python3 build_effects_guide.py` and open
 `./effects-guide/index.html`. Each card has a 6s sample clip (hover to play)
 and a one-line description.
 
-## Post-Production Effects (10)
+## Post-Production Effects (20)
 
 Post effects transform the paletted buffer after all shape effects have drawn
 but before palette mapping and upscaling. They're fast (array operations) and
 work with any effect combination. Multiple post effects can be stacked.
+All 20 can be excluded from random mode via `--exclude-post`.
 
-**Symmetry**
+**Symmetry** (6)
 - `mirror_h` — left half → mirror right (bilateral/Rorschach symmetry)
 - `mirror_v` — top half → mirror bottom
 - `mirror_quad` — top-left quadrant → mirror into all four quadrants
@@ -223,20 +288,45 @@ work with any effect combination. Multiple post effects can be stacked.
   (`--kaleidoscope-n`, default 6). More ornate than radial — true toy-
   kaleidoscope symmetry.
 
-**Spatial**
+**Spatial transforms** (4)
 - `tile` — repeat center portion in NxN grid (`--tile-nx`, `--tile-ny`,
   default 2×2). Works best with broad-feature effects (sierpinski, puffs,
   lotsadots); fine-line effects (hexagon, diag) lose detail at 3x3+.
 - `twist` — polar vortex distortion (`--twist-amount`, default 0.8 radians;
   negative = opposite spin). Pixels near center rotate more than edges.
+- `spiral` — logarithmic spiral coordinate remap (`--spiral-tightness`,
+  default 0.15). Different from twist: twist rotates around center, spiral
+  maps along nautilus-like paths. Animated over time.
+- `xor` — XOR buffer with a shifted copy of itself (`--xor-shift-x`,
+  `--xor-shift-y`). Produces moiré interference patterns. Animated.
 
-**Animated**
+**Block transforms** (2)
+- `rectangles` — random rectangular block swap (`--rectangles-n`, default 8
+  swaps per frame). Glitchy rearrangement that evolves slowly over time.
+- `randomize` — cut into NxN grid, shuffle all blocks (`--randomize-block-size`,
+  default 20px). Mosaic scramble — smaller blocks = finer grain.
+
+**Masks & overlays** (3)
+- `starburst` — radial ray mask from center (`--starburst-rays`, default 16;
+  `--starburst-thickness`, default 1). Black sunburst lines over the pattern.
+- `mesh` — regular grid overlay (`--mesh-spacing`, default 12px). Black
+  horizontal + vertical lines at fixed intervals.
+- `drip` — shift each column down by a varying amount (`--drip-max`,
+  default 40px). Gravity/rain distortion that evolves over time.
+
+**Animated wipes** (5)
 - `scroll` — continuously slide the buffer wrapping at edges
   (`--scroll-speed-x`, `--scroll-speed-y`). Set speed-x=0 + speed-y=N
   for vertical scroll.
 - `wave` — sine-wave horizontal displacement per row
   (`--wave-amplitude`, `--wave-frequency`, `--wave-speed`). Underwater/
-  heat-haze wobble that animates over time.
+  heat-haze wobble.
+- `wipe` — animated directional clear (`--wipe-direction {left,right,up,down}`,
+  `--wipe-speed`). Edge sweeps across then bounces back.
+- `movingbars` — sliding bar mask (`--movingbars-n`, `--movingbars-width`,
+  `--movingbars-direction {horizontal,vertical}`).
+- `linewipe` — staggered line-by-line wipe (`--linewipe-n`, `--linewipe-speed`).
+  Each line sweeps at a different phase for a cascade effect.
 
 ## Output Artifacts
 
