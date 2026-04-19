@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def mirror_h(buf: np.ndarray) -> np.ndarray:
+def mirror_h(buf: np.ndarray, **_kw) -> np.ndarray:
     """Left half → mirror right. Bilateral (Rorschach) symmetry."""
     H, W = buf.shape
     mid = W // 2
@@ -18,7 +18,7 @@ def mirror_h(buf: np.ndarray) -> np.ndarray:
     return out
 
 
-def mirror_v(buf: np.ndarray) -> np.ndarray:
+def mirror_v(buf: np.ndarray, **_kw) -> np.ndarray:
     """Top half → mirror bottom."""
     H, W = buf.shape
     mid = H // 2
@@ -27,7 +27,7 @@ def mirror_v(buf: np.ndarray) -> np.ndarray:
     return out
 
 
-def mirror_quad(buf: np.ndarray) -> np.ndarray:
+def mirror_quad(buf: np.ndarray, **_kw) -> np.ndarray:
     """Top-left quadrant → mirror into all four quadrants."""
     H, W = buf.shape
     mh, mw = H // 2, W // 2
@@ -39,7 +39,7 @@ def mirror_quad(buf: np.ndarray) -> np.ndarray:
     return out
 
 
-def mirror_diamond(buf: np.ndarray) -> np.ndarray:
+def mirror_diamond(buf: np.ndarray, **_kw) -> np.ndarray:
     """Diagonal mirror — top-left triangle → reflect across both diagonals.
 
     Produces the diamond-axis kaleidoscope pattern (rotated 45° from
@@ -67,7 +67,7 @@ def mirror_diamond(buf: np.ndarray) -> np.ndarray:
     return out
 
 
-def radial(buf: np.ndarray, n: int = 6) -> np.ndarray:
+def radial(buf: np.ndarray, n: int = 6, **_kw) -> np.ndarray:
     """N-fold rotational symmetry around the center.
 
     Renders one wedge (slice of angle 2pi/n), then copies it N times
@@ -101,7 +101,7 @@ def radial(buf: np.ndarray, n: int = 6) -> np.ndarray:
     return out
 
 
-def tile(buf: np.ndarray, nx: int = 2, ny: int = 2) -> np.ndarray:
+def tile(buf: np.ndarray, nx: int = 2, ny: int = 2, **_kw) -> np.ndarray:
     """Repeat the buffer in an nx×ny grid, scaling down to fit the original size.
 
     tile(2,2) = the whole pattern appears 4 times at quarter size.
@@ -118,7 +118,7 @@ def tile(buf: np.ndarray, nx: int = 2, ny: int = 2) -> np.ndarray:
     return out[:H, :W]
 
 
-def kaleidoscope(buf: np.ndarray, n: int = 6) -> np.ndarray:
+def kaleidoscope(buf: np.ndarray, n: int = 6, **_kw) -> np.ndarray:
     """N-fold kaleidoscope: like radial but alternating wedges are mirrored.
 
     Produces true kaleidoscope symmetry (like looking through a toy
@@ -147,7 +147,7 @@ def kaleidoscope(buf: np.ndarray, n: int = 6) -> np.ndarray:
     return buf[sy, sx]
 
 
-def twist(buf: np.ndarray, amount: float = 0.8) -> np.ndarray:
+def twist(buf: np.ndarray, amount: float = 0.8, **_kw) -> np.ndarray:
     """Polar twist: pixels near center rotate more than edges.
 
     Creates a vortex/pinwheel distortion. amount controls the total
@@ -174,7 +174,7 @@ def twist(buf: np.ndarray, amount: float = 0.8) -> np.ndarray:
 
 
 def scroll(buf: np.ndarray, frame_idx: int = 0,
-           speed_x: float = 1.0, speed_y: float = 0.0) -> np.ndarray:
+           speed_x: float = 1.0, speed_y: float = 0.0, **_kw) -> np.ndarray:
     """Continuously scroll the buffer, wrapping at edges.
 
     Offset accumulates with frame_idx so the pattern slides across the
@@ -187,7 +187,7 @@ def scroll(buf: np.ndarray, frame_idx: int = 0,
 
 def wave(buf: np.ndarray, frame_idx: int = 0,
          amplitude: float = 8.0, frequency: float = 0.04,
-         speed: float = 0.1) -> np.ndarray:
+         speed: float = 0.1, **_kw) -> np.ndarray:
     """Sine-wave horizontal displacement per row.
 
     Each row shifts left/right by a sine function of its y-position,
@@ -219,14 +219,13 @@ REGISTRY = {
 
 
 def apply_post(buf: np.ndarray, name: str, frame_idx: int = 0, **kwargs) -> np.ndarray:
-    """Look up and apply a named post effect."""
+    """Look up and apply a named post effect.
+
+    All post functions accept **kwargs so extra params are silently ignored.
+    frame_idx is always passed for time-varying effects (scroll, wave).
+    """
     if name not in REGISTRY:
         raise ValueError(f'unknown post effect: {name!r}; valid: {list(REGISTRY.keys())}')
     fn, defaults = REGISTRY[name]
-    merged = {**defaults, **kwargs}
-    # Pass frame_idx to effects that accept it (scroll, wave).
-    import inspect
-    sig = inspect.signature(fn)
-    if 'frame_idx' in sig.parameters:
-        merged['frame_idx'] = frame_idx
+    merged = {**defaults, 'frame_idx': frame_idx, **kwargs}
     return fn(buf, **merged)

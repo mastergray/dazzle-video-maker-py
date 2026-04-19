@@ -115,7 +115,8 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
            crf=23, analysis_json=None,
            mode='random', min_fx=4, max_fx=5, max_overlap=0,
            fixed_effects=None, profile_path=None,
-           fixed_post=None, post_min=0, post_max=1):
+           fixed_post=None, post_min=0, post_max=1,
+           post_kwargs=None):
     """Render audio to MP4.
 
     mode='random': rotate through all 32 effects; each scene holds min_fx..max_fx
@@ -256,8 +257,9 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
             # Apply post-production effects (mirror/radial/etc.) to the
             # paletted buffer before palette mapping.
             post_buf = buffer
+            pkw = post_kwargs or {}
             for pname in scene_post:
-                post_buf = apply_post(post_buf, pname, frame_idx=i)
+                post_buf = apply_post(post_buf, pname, frame_idx=i, **pkw)
 
             rgb = cur_pal[post_buf]
             frame = scale_frame(rgb, scale) if scale != 1 else rgb
@@ -421,6 +423,32 @@ def main():
                                'settings + inlined analysis.')
     prof_grp.add_argument('--no-profile', action='store_true',
                           help='skip writing the profile JSON (console summary still prints)')
+
+    post_grp = p.add_argument_group('post-production parameters',
+                                    'Tune parameterised post effects. Params only apply '
+                                    'when their post effect is active in a scene.')
+    post_grp.add_argument('--tile-nx', type=int, default=2,
+                          help='[tile] horizontal repeats (default 2)')
+    post_grp.add_argument('--tile-ny', type=int, default=2,
+                          help='[tile] vertical repeats (default 2)')
+    post_grp.add_argument('--radial-n', type=int, default=6,
+                          help='[radial] fold count (default 6 = hexagonal)')
+    post_grp.add_argument('--kaleidoscope-n', type=int, default=6,
+                          help='[kaleidoscope] fold count (default 6)')
+    post_grp.add_argument('--twist-amount', type=float, default=0.8,
+                          help='[twist] rotation at center in radians; negative = opposite '
+                               'direction (default 0.8)')
+    post_grp.add_argument('--scroll-speed-x', type=float, default=1.0,
+                          help='[scroll] horizontal pixels/frame (default 1.0)')
+    post_grp.add_argument('--scroll-speed-y', type=float, default=0.0,
+                          help='[scroll] vertical pixels/frame (default 0.0; set both for '
+                               'diagonal)')
+    post_grp.add_argument('--wave-amplitude', type=float, default=8.0,
+                          help='[wave] max displacement in pixels (default 8)')
+    post_grp.add_argument('--wave-frequency', type=float, default=0.04,
+                          help='[wave] sine frequency (default 0.04; higher = more ripples)')
+    post_grp.add_argument('--wave-speed', type=float, default=0.1,
+                          help='[wave] animation speed (default 0.1)')
     args = p.parse_args()
 
     # Mode-specific constraint validation
@@ -446,13 +474,22 @@ def main():
         base, _ = os.path.splitext(args.output)
         profile_path = base + '.profile.json'
 
+    post_kwargs = {
+        'nx': args.tile_nx, 'ny': args.tile_ny,
+        'n': args.radial_n,  # shared by radial + kaleidoscope
+        'amount': args.twist_amount,
+        'speed_x': args.scroll_speed_x, 'speed_y': args.scroll_speed_y,
+        'amplitude': args.wave_amplitude, 'frequency': args.wave_frequency,
+        'speed': args.wave_speed,
+    }
     render(args.audio, args.output,
            scale=args.scale, fps=args.fps, seed=args.seed,
            crf=args.crf, analysis_json=args.analysis,
            mode=args.mode, min_fx=args.min_fx, max_fx=args.max_fx,
            max_overlap=args.overlap, fixed_effects=args.effects,
            profile_path=profile_path,
-           fixed_post=args.post, post_min=args.post_min, post_max=args.post_max)
+           fixed_post=args.post, post_min=args.post_min, post_max=args.post_max,
+           post_kwargs=post_kwargs)
 
 
 if __name__ == '__main__':
