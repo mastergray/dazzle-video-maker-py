@@ -184,8 +184,9 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
         name = palette_names[int(rng.integers(len(palette_names)))]
         return name, PALETTES[name]()
 
-    if mode == 'fixed' and palette_name:
-        cur_pal_name, palette = palette_name, PALETTES[palette_name]()
+    if mode == 'fixed':
+        pn = palette_name or 'rainbow'
+        cur_pal_name, palette = pn, PALETTES[pn]()
     else:
         cur_pal_name, palette = _pick_palette()
     pal_shift = 0
