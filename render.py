@@ -16,6 +16,7 @@ import numpy as np
 from audio import AudioFeatures
 from palette import rainbow_palette, cycle
 from effects import REGISTRY
+from post import REGISTRY as POST_REGISTRY, apply_post
 
 W, H = 320, 200
 
@@ -113,13 +114,15 @@ def _soft_switch_prob(frames_since, min_frames, max_frames):
 def render(audio_path, out_path, scale=6, fps=60, seed=None,
            crf=23, analysis_json=None,
            mode='random', min_fx=4, max_fx=5, max_overlap=0,
-           fixed_effects=None, profile_path=None):
+           fixed_effects=None, profile_path=None,
+           fixed_post=None, post_min=0, post_max=1):
     """Render audio to MP4.
 
     mode='random': rotate through all 32 effects; each scene holds min_fx..max_fx
                    stacked effects, swaps on section_change (hard) and downbeat (soft).
+                   Post effects are also randomly picked per scene (post_min..post_max).
     mode='fixed':  fixed_effects list IS the scene — stack all of them for the whole
-                   render, no rotation. min_fx/max_fx/max_overlap ignored.
+                   render, no rotation. fixed_post is the post effect (or None).
     """
     # Hardcoded scheduler tuning (were CLI flags --min-scene/--max-scene/--no-sections,
     # now commented out in main(); values preserved here for identical behavior).
@@ -168,19 +171,33 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
     pal_shift = 0
 
     prev_names = []
+    post_names = list(POST_REGISTRY.keys())
 
     def _new_set():
         count = int(rng.integers(min_fx, max_fx + 1))
         return pick_effect_set(effect_names, rng, count,
                                avoid_names=prev_names, max_overlap=max_overlap)
 
+    def _pick_post():
+        """Pick post effects for this scene (random mode)."""
+        if post_max <= 0:
+            return []
+        count = int(rng.integers(post_min, post_max + 1))
+        if count <= 0:
+            return []
+        idxs = rng.choice(len(post_names), size=min(count, len(post_names)), replace=False)
+        return [post_names[i] for i in idxs]
+
     if mode == 'fixed':
         active = [(n, REGISTRY[n]()) for n in effect_names]
+        scene_post = [fixed_post] if fixed_post else []
     else:
         active = _new_set()
+        scene_post = _pick_post()
     prev_names = [n for n, _ in active]
-    scene_log = [{'t_sec': 0.0, 'effects': list(prev_names)}]
-    print(f'  [0.00s] {mode} -> {prev_names}')
+    scene_log = [{'t_sec': 0.0, 'effects': list(prev_names), 'post': list(scene_post)}]
+    post_label = f' post={scene_post}' if scene_post else ''
+    print(f'  [0.00s] {mode} -> {prev_names}{post_label}')
     last_switch_frame = 0
 
     ffmpeg = subprocess.Popen(
@@ -212,12 +229,15 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
             if want_switch and i > 0:
                 active = _new_set()
                 prev_names = [n for n, _ in active]
+                scene_post = _pick_post()
                 buffer[:] = 0
                 palette = rainbow_palette()
                 if rng.random() < 0.5:
                     palette = cycle(palette, int(rng.integers(1, 255)))
-                scene_log.append({'t_sec': round(t_sec, 3), 'effects': list(prev_names)})
-                print(f'  [{t_sec:5.2f}s] {mode} -> {prev_names}')
+                scene_log.append({'t_sec': round(t_sec, 3), 'effects': list(prev_names),
+                                  'post': list(scene_post)})
+                post_label = f' post={scene_post}' if scene_post else ''
+                print(f'  [{t_sec:5.2f}s] {mode} -> {prev_names}{post_label}')
                 last_switch_frame = i
 
             feats = af.features_at(i)
@@ -233,7 +253,13 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
             for _, eff in active:
                 eff.step(buffer, feats)
 
-            rgb = cur_pal[buffer]
+            # Apply post-production effects (mirror/radial/etc.) to the
+            # paletted buffer before palette mapping.
+            post_buf = buffer
+            for pname in scene_post:
+                post_buf = apply_post(post_buf, pname)
+
+            rgb = cur_pal[post_buf]
             frame = scale_frame(rgb, scale) if scale != 1 else rgb
             ffmpeg.stdin.write(frame.tobytes())
 
@@ -326,7 +352,10 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
 
 def main():
     fx_names = sorted(REGISTRY.keys())
-    epilog = 'Available effects ({}):\n  '.format(len(fx_names)) + ', '.join(fx_names)
+    post_names = sorted(POST_REGISTRY.keys())
+    epilog = ('Available effects ({}):\n  '.format(len(fx_names)) + ', '.join(fx_names)
+              + '\n\nAvailable post effects ({}):\n  '.format(len(post_names))
+              + ', '.join(post_names))
     p = argparse.ArgumentParser(
         description='Dazzle-port offline renderer',
         epilog=epilog,
@@ -342,6 +371,9 @@ def main():
     mode_grp.add_argument('--effects', nargs='+', default=None,
                           help='[fixed mode] exact list of effects to stack as one scene '
                                '(see full list in epilog)')
+    mode_grp.add_argument('--post', default=None, choices=post_names + [None],
+                          help='[fixed mode] post-production effect to apply '
+                               '(see full list in epilog)')
 
     rand_grp = p.add_argument_group('random-mode options')
     rand_grp.add_argument('--min', dest='min_fx', type=int, default=4,
@@ -353,6 +385,11 @@ def main():
                           help='max effects carried over from the previous scene '
                                '(default 0 = fully disjoint; ceiling may be exceeded '
                                'if pool is small)')
+    rand_grp.add_argument('--post-min', type=int, default=0,
+                          help='minimum post effects per scene (default 0 = some scenes '
+                               'have no post)')
+    rand_grp.add_argument('--post-max', type=int, default=1,
+                          help='maximum post effects per scene (default 1)')
     # --min-scene / --max-scene / --no-sections removed from the CLI; scheduler
     # defaults are now hardcoded in render(). Uncomment if user control returns.
     # rand_grp.add_argument('--min-scene', type=float, default=2.5,
@@ -414,7 +451,8 @@ def main():
            crf=args.crf, analysis_json=args.analysis,
            mode=args.mode, min_fx=args.min_fx, max_fx=args.max_fx,
            max_overlap=args.overlap, fixed_effects=args.effects,
-           profile_path=profile_path)
+           profile_path=profile_path,
+           fixed_post=args.post, post_min=args.post_min, post_max=args.post_max)
 
 
 if __name__ == '__main__':
