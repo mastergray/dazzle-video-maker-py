@@ -109,6 +109,26 @@ python3 render.py song.wav mosaic.mp4 --mode fixed --effects hexagon spiral \
 # Downward wipe
 python3 render.py song.wav wipe.mp4 --mode fixed --effects boxes ellipse \
     --post wipe --wipe-direction down --wipe-speed 3
+
+# Bubble lens distortion — large bubbles
+python3 render.py song.wav blister.mp4 --mode fixed --effects hexagon spiral \
+    --post blister --blister-n 8 --blister-radius 60
+
+# Vignette darkening
+python3 render.py song.wav umbra.mp4 --mode fixed --effects sierpinski puffs \
+    --post umbra --umbra-strength 0.9
+
+# Tetris column fall with narrow blocks
+python3 render.py song.wav tetrys.mp4 --mode fixed --effects boxes hexagon \
+    --post tetrys --tetrys-block-size 10
+
+# Cylindrical tube warp — high curvature
+python3 render.py song.wav ziti.mp4 --mode fixed --effects spiral sweep \
+    --post ziti --ziti-curvature 0.6
+
+# Fireflies over a dark effect
+python3 render.py song.wav flies.mp4 --mode fixed --effects tunnel wandering \
+    --post firefly --firefly-n 50
 ```
 
 ### Stacking post effects
@@ -243,6 +263,13 @@ python3 build_effects_guide.py --output-dir ./effects-guide
 - `--linewipe-n N` — staggered wipe lines (default 10)
 - `--linewipe-speed N` — animation speed (default 1.0)
 - `--randomize-block-size N` — shuffle block size pixels (default 20)
+- `--blister-n N` — number of bubble lenses (default 5)
+- `--blister-radius N` — max bubble radius pixels (default 40)
+- `--firefly-n N` — wandering bright points (default 30)
+- `--firefly-brightness N` — palette index for points (default 200)
+- `--umbra-strength N` — vignette strength 0..1 (default 0.7)
+- `--tetrys-block-size N` — falling block column width pixels (default 16)
+- `--ziti-curvature N` — cylinder curvature (default 0.3)
 
 ## Modes
 
@@ -271,12 +298,12 @@ For a visual catalog, run `python3 build_effects_guide.py` and open
 `./effects-guide/index.html`. Each card has a 6s sample clip (hover to play)
 and a one-line description.
 
-## Post-Production Effects (20)
+## Post-Production Effects (25)
 
 Post effects transform the paletted buffer after all shape effects have drawn
 but before palette mapping and upscaling. They're fast (array operations) and
 work with any effect combination. Multiple post effects can be stacked.
-All 20 can be excluded from random mode via `--exclude-post`.
+All 25 can be excluded from random mode via `--exclude-post`.
 
 **Symmetry** (6)
 - `mirror_h` — left half → mirror right (bilateral/Rorschach symmetry)
@@ -327,6 +354,24 @@ All 20 can be excluded from random mode via `--exclude-post`.
   `--movingbars-direction {horizontal,vertical}`).
 - `linewipe` — staggered line-by-line wipe (`--linewipe-n`, `--linewipe-speed`).
   Each line sweeps at a different phase for a cascade effect.
+
+**Distortion** (3)
+- `blister` — circular bubble lens distortion (`--blister-n`, default 5;
+  `--blister-radius`, default 40px). Scattered magnification bubbles like
+  water droplets on glass. Positions change slowly over time.
+- `ziti` — cylindrical tube warp (`--ziti-curvature`, default 0.3). Center
+  columns stay straight; edges compress horizontally simulating a curved
+  surface. Animated rotation.
+- `tetrys` — tetris-like column falling (`--tetrys-block-size`, default 16px).
+  Each column of blocks drops at a different rate — cascading stagger effect.
+
+**Overlay** (2)
+- `firefly` — scattered bright wandering points (`--firefly-n`, default 30;
+  `--firefly-brightness`, default 200). Points drift smoothly in
+  deterministic orbits. Most visible on darker effects.
+- `umbra` — radial vignette (`--umbra-strength`, default 0.7). Darkens
+  pixels toward edges while center stays bright. strength=1 makes edges
+  fully black.
 
 ## Output Artifacts
 
@@ -380,9 +425,10 @@ dazzle-video-maker-py/       (repo root)
 - **More shape effects** — the v5.0 catalog added `balls`, `cones`,
   `corkscrew`, `cycloids`, `daisies`, `hilbert`, `tiles`, `wedges`, etc.
   These aren't in the v4.0 reference and would be additions rather than ports.
-- **More post effects** — v5.0 had ~24 "effect modes" including Blister,
-  Drip, Firefly, Gas cloud, Mesh, Rectangles, Starburst, Umbra, and more.
-  Several of these could be implemented as additional post passes.
+- **Additional post effects** — 4 v5.0 modes were skipped as non-visual:
+  Juggle palette (palette-level), Kleenup (reset), Countdown (timer
+  overlay), Gas cloud (blur — meaningless on palette indices). These could
+  be revisited if the palette system evolves.
 - **Audio-reactive post parameters** — post effect params (fold count,
   twist amount, wave amplitude) could be driven by audio features for
   per-frame variation. Currently post params are static per render.
