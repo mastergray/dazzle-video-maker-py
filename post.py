@@ -102,19 +102,22 @@ def radial(buf: np.ndarray, n: int = 6, **_kw) -> np.ndarray:
 
 
 def tile(buf: np.ndarray, nx: int = 2, ny: int = 2, **_kw) -> np.ndarray:
-    """Repeat the buffer in an nx×ny grid, scaling down to fit the original size.
+    """Repeat the center portion of the buffer in an nx×ny grid.
 
-    tile(2,2) = the whole pattern appears 4 times at quarter size.
-    tile(3,3) = 9 copies. Creates fractal-like recursive visual density.
+    tile(2,2) = center quadrant appears 4 times.
+    tile(3,3) = center ninth appears 9 times.
+    Crops from the CENTER since dazzle effects draw outward from
+    center — the corners are mostly empty/edge content.
     """
     H, W = buf.shape
-    # Downsample to tile size via nearest-neighbour.
     th, tw = H // ny, W // nx
     if th < 2 or tw < 2:
         return buf
-    small = buf[::ny, ::nx][:th, :tw]
-    # Tile the small version to fill the frame.
-    out = np.tile(small, (ny, nx))
+    cy, cx = H // 2, W // 2
+    y0 = cy - th // 2
+    x0 = cx - tw // 2
+    patch = buf[y0:y0 + th, x0:x0 + tw]
+    out = np.tile(patch, (ny, nx))
     return out[:H, :W]
 
 
