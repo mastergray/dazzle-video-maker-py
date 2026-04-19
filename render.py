@@ -498,6 +498,20 @@ def main():
                           help='[linewipe] animation speed (default 1.0)')
     post_grp.add_argument('--randomize-block-size', type=int, default=20,
                           help='[randomize] shuffle block size in pixels (default 20)')
+    post_grp.add_argument('--blister-n', type=int, default=5,
+                          help='[blister] number of bubble lenses (default 5)')
+    post_grp.add_argument('--blister-radius', type=int, default=40,
+                          help='[blister] max bubble radius in pixels (default 40)')
+    post_grp.add_argument('--firefly-n', type=int, default=30,
+                          help='[firefly] number of wandering bright points (default 30)')
+    post_grp.add_argument('--firefly-brightness', type=int, default=200,
+                          help='[firefly] palette index for firefly points (default 200)')
+    post_grp.add_argument('--umbra-strength', type=float, default=0.7,
+                          help='[umbra] vignette strength 0..1 (default 0.7; 1=edges black)')
+    post_grp.add_argument('--tetrys-block-size', type=int, default=16,
+                          help='[tetrys] falling block column width (default 16)')
+    post_grp.add_argument('--ziti-curvature', type=float, default=0.3,
+                          help='[ziti] cylinder curvature (default 0.3; higher=more curved)')
     args = p.parse_args()
 
     # Mode-specific constraint validation
@@ -562,6 +576,11 @@ def main():
                          'direction': args.movingbars_direction},
         'linewipe':     {'n_lines': args.linewipe_n, 'speed': args.linewipe_speed},
         'randomize':    {'block_size': args.randomize_block_size},
+        'blister':      {'n_bubbles': args.blister_n, 'max_radius': args.blister_radius},
+        'firefly':      {'n_flies': args.firefly_n, 'brightness': args.firefly_brightness},
+        'umbra':        {'strength': args.umbra_strength},
+        'tetrys':       {'block_size': args.tetrys_block_size},
+        'ziti':         {'curvature': args.ziti_curvature},
     }
     render(args.audio, args.output,
            scale=args.scale, fps=args.fps, seed=args.seed,

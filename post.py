@@ -396,6 +396,143 @@ def randomize(buf: np.ndarray, block_size: int = 20,
     return out
 
 
+def blister(buf: np.ndarray, n_bubbles: int = 5, max_radius: int = 40,
+            frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Circular bubble lens distortion — each blister magnifies/displaces
+    a circular region like a water droplet on glass.
+    """
+    H, W = buf.shape
+    out = buf.copy()
+    rng = np.random.RandomState((frame_idx // 20) + 13)
+    yy, xx = np.mgrid[:H, :W]
+
+    for _ in range(n_bubbles):
+        r = rng.randint(15, max(16, max_radius))
+        cy = rng.randint(r, max(r + 1, H - r))
+        cx = rng.randint(r, max(r + 1, W - r))
+
+        # Lens: pixels inside the circle are pulled toward center (magnify).
+        dy = yy[cy - r:cy + r, cx - r:cx + r] - cy
+        dx = xx[cy - r:cy + r, cx - r:cx + r] - cx
+        dist = np.sqrt(dy * dy + dx * dx)
+        mask = dist < r
+
+        # Displacement: scale distance from center by a lens factor.
+        factor = np.where(mask, dist / max(1, r), 1.0)
+        factor = factor ** 1.8  # exponent > 1 = magnifying lens
+
+        sy = (cy + dy * factor).astype(int)
+        sx = (cx + dx * factor).astype(int)
+        sy = np.clip(sy, 0, H - 1)
+        sx = np.clip(sx, 0, W - 1)
+
+        patch = buf[sy, sx]
+        y0, y1 = cy - r, cy + r
+        x0, x1 = cx - r, cx + r
+        region = out[y0:y1, x0:x1]
+        region[mask[:region.shape[0], :region.shape[1]]] = \
+            patch[mask[:region.shape[0], :region.shape[1]]]
+
+    return out
+
+
+def firefly(buf: np.ndarray, n_flies: int = 30, brightness: int = 200,
+            frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Scattered bright wandering points overlaid on the buffer.
+
+    Fireflies drift slowly across the frame; their positions are
+    deterministic per frame_idx so the motion is smooth.
+    """
+    H, W = buf.shape
+    out = buf.copy()
+
+    for k in range(n_flies):
+        # Each firefly has a unique slow orbit.
+        phase = frame_idx * 0.02 + k * 2.7
+        x = int((np.sin(phase * 0.3 + k) * 0.4 + 0.5) * W) % W
+        y = int((np.cos(phase * 0.4 + k * 1.3) * 0.4 + 0.5) * H) % H
+        # Draw a small bright cross (3px).
+        out[y, x] = brightness % 256
+        if y > 0:
+            out[y - 1, x] = brightness % 256
+        if y < H - 1:
+            out[y + 1, x] = brightness % 256
+        if x > 0:
+            out[y, x - 1] = brightness % 256
+        if x < W - 1:
+            out[y, x + 1] = brightness % 256
+
+    return out
+
+
+def umbra(buf: np.ndarray, strength: float = 0.7, **_kw) -> np.ndarray:
+    """Radial vignette — darken pixels toward the edges.
+
+    Pixels near center stay bright; pixels near edges get their palette
+    index pulled toward 0 (black). strength controls how aggressive the
+    darkening is (0 = no effect, 1 = edges fully black).
+    """
+    H, W = buf.shape
+    cy, cx = H / 2, W / 2
+    yy, xx = np.mgrid[:H, :W]
+    dist = np.sqrt((yy - cy) ** 2 + (xx - cx) ** 2)
+    max_dist = np.sqrt(cy ** 2 + cx ** 2)
+    # Normalise distance 0..1 and apply strength curve.
+    norm = (dist / max_dist) ** 1.5 * strength
+    # Scale palette indices toward 0.
+    result = (buf.astype(np.float64) * (1.0 - norm))
+    return np.clip(result, 0, 255).astype(np.uint8)
+
+
+def tetrys(buf: np.ndarray, block_size: int = 16,
+           frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Tetris-like block falling — columns of blocks drop at different rates.
+
+    Each column of block_size-wide blocks falls downward at a rate
+    that varies per column. Creates a cascading/stacking look.
+    """
+    H, W = buf.shape
+    out = np.zeros_like(buf)
+    n_cols = W // block_size
+
+    for col in range(n_cols):
+        x0 = col * block_size
+        x1 = min(W, x0 + block_size)
+        # Each column falls at a different speed.
+        drop = int((frame_idx * (0.5 + col * 0.3)) % H)
+        col_data = buf[:, x0:x1]
+        out[:, x0:x1] = np.roll(col_data, drop, axis=0)
+
+    # Handle remainder columns.
+    remainder = W - n_cols * block_size
+    if remainder > 0:
+        out[:, n_cols * block_size:] = buf[:, n_cols * block_size:]
+
+    return out
+
+
+def ziti(buf: np.ndarray, curvature: float = 0.3,
+         frame_idx: int = 0, **_kw) -> np.ndarray:
+    """Cylindrical tube distortion — wraps the buffer around a vertical cylinder.
+
+    Center columns are unaffected; columns toward edges are compressed
+    horizontally, simulating perspective on a curved surface. Animates
+    by slowly rotating the cylinder.
+    """
+    H, W = buf.shape
+    cx = W / 2
+    yy, xx = np.mgrid[:H, :W]
+
+    # Map x to an angle on the cylinder surface.
+    phase = frame_idx * 0.01
+    angle = (xx - cx) / cx * (np.pi * curvature) + phase
+    # Project back: x' = cx + cx * sin(angle) / curvature
+    new_x = cx + cx * np.sin(angle) / max(0.1, np.pi * curvature)
+    new_x = np.clip(new_x, 0, W - 1).astype(int)
+
+    return buf[yy, new_x]
+
+
 # Registry: name → (function, default_kwargs).
 REGISTRY = {
     'mirror_h':       (mirror_h, {}),
@@ -418,6 +555,11 @@ REGISTRY = {
     'movingbars':     (movingbars, {'n_bars': 6, 'bar_width': 8, 'direction': 'horizontal'}),
     'linewipe':       (linewipe, {'n_lines': 10, 'speed': 1.0}),
     'randomize':      (randomize, {'block_size': 20}),
+    'blister':        (blister, {'n_bubbles': 5, 'max_radius': 40}),
+    'firefly':        (firefly, {'n_flies': 30, 'brightness': 200}),
+    'umbra':          (umbra, {'strength': 0.7}),
+    'tetrys':         (tetrys, {'block_size': 16}),
+    'ziti':           (ziti, {'curvature': 0.3}),
 }
 
 
