@@ -3,9 +3,11 @@
 Python port of MicroTronics Dazzle 4.0 (1990 DOS pattern-generator screensaver),
 reimplemented as an offline audio-reactive video renderer. Takes a WAV in,
 writes an MP4 out, with the original 32 shape effects driven by beat/onset/
-section/energy data from a pre-analysis pass. Includes 10 post-production
-effects (mirror, tile, kaleidoscope, twist, scroll, wave) that transform the
-output of any shape generator into symmetric, tiled, or animated compositions.
+section/energy data from a pre-analysis pass. Includes 26 post-production
+effects (mirror, tile, kaleidoscope, twist, scroll, wave, xor, drip, starburst,
+juggle, and more) that transform the output of any shape generator into
+symmetric, tiled, or animated compositions. 8 color palettes with per-scene
+randomization.
 
 ## Requirements
 
@@ -75,6 +77,29 @@ python3 render.py song.wav wavy.mp4 --mode fixed --effects hexagon boxes \
 python3 render.py song.wav scroll.mp4 --mode fixed --effects diag1 diag3 \
     --post scroll --scroll-speed-x 0 --scroll-speed-y 2
 ```
+
+### Palettes
+
+```
+# Fixed mode with fire palette
+python3 render.py song.wav fire.mp4 --mode fixed --effects hexagon spiral \
+    --post mirror_quad --palette fire
+
+# Fixed mode with ice palette + juggle scramble
+python3 render.py song.wav juggled.mp4 --mode fixed --effects boxes puffs \
+    --post juggle --palette ice
+
+# Juggle with invert mode (dark↔bright swap)
+python3 render.py song.wav inverted.mp4 --mode fixed --effects sierpinski tunnel \
+    --post juggle --juggle-mode invert --palette neon
+
+# Random mode automatically picks palette per scene (no flag needed)
+python3 render.py song.wav varied.mp4
+```
+
+Available palettes: `rainbow`, `fire`, `ice`, `electric`, `neon`, `grayscale`,
+`ocean`, `lava`. In random mode each scene picks a palette automatically.
+In fixed mode use `--palette NAME` to select one (defaults to rainbow).
 
 ### More post effects
 
@@ -218,6 +243,8 @@ python3 build_effects_guide.py --output-dir ./effects-guide
 - `--mode {random,fixed}` — default `random`
 - `--effects NAME [NAME ...]` — fixed-mode only; exact scene composition
 - `--post NAME [NAME ...]` — fixed-mode only; post effect(s) to apply in order
+- `--palette NAME` — fixed-mode palette (`rainbow`, `fire`, `ice`, `electric`,
+  `neon`, `grayscale`, `ocean`, `lava`); random mode picks per scene
 
 **Random-mode options**
 - `--min N` — minimum stacked effects per scene (default 4)
@@ -270,6 +297,7 @@ python3 build_effects_guide.py --output-dir ./effects-guide
 - `--umbra-strength N` — vignette strength 0..1 (default 0.7)
 - `--tetrys-block-size N` — falling block column width pixels (default 16)
 - `--ziti-curvature N` — cylinder curvature (default 0.3)
+- `--juggle-mode {shuffle,invert,reverse,rotate}` — palette manipulation mode (default shuffle)
 
 ## Modes
 
@@ -298,12 +326,12 @@ For a visual catalog, run `python3 build_effects_guide.py` and open
 `./effects-guide/index.html`. Each card has a 6s sample clip (hover to play)
 and a one-line description.
 
-## Post-Production Effects (25)
+## Post-Production Effects (26)
 
 Post effects transform the paletted buffer after all shape effects have drawn
 but before palette mapping and upscaling. They're fast (array operations) and
 work with any effect combination. Multiple post effects can be stacked.
-All 25 can be excluded from random mode via `--exclude-post`.
+All 26 can be excluded from random mode via `--exclude-post`.
 
 **Symmetry** (6)
 - `mirror_h` — left half → mirror right (bilateral/Rorschach symmetry)
@@ -373,15 +401,22 @@ All 25 can be excluded from random mode via `--exclude-post`.
   pixels toward edges while center stays bright. strength=1 makes edges
   fully black.
 
+**Palette** (1)
+- `juggle` — remap palette indices to scramble colors without changing
+  spatial patterns (`--juggle-mode`). Four modes: `shuffle` (random
+  reorder, evolves over time), `invert` (dark↔bright), `reverse`
+  (ramp runs backward), `rotate` (frame-varying index shift).
+
 ## Output Artifacts
 
 **`<name>.mp4`** — the rendered video, H.264/AAC, scaled per `--scale`.
 
 **`<name>.profile.json`** — full record of the render for reproducibility:
-all CLI settings, the resolved seed, a per-scene timeline (including which
-post effect each scene used), audio analysis summary, and the inlined
-analysis blob. Rebuild bit-identically with the same input + same seed +
-same flags. Skip with `--no-profile`.
+all CLI settings (mode, scale, seed, palette, effects, post, excludes),
+per-effect post-production parameters, a per-scene timeline (effects +
+post + palette per scene), audio analysis summary, and the inlined analysis
+blob. Contains everything needed to regenerate the exact output. Skip with
+`--no-profile`.
 
 **Analyzer tempfiles** — if you don't pass `--analysis`, the renderer invokes
 `analyze_audio.py` to a tempfile which is deleted after the render completes.
@@ -394,8 +429,8 @@ dazzle-video-maker-py/       (repo root)
   render.py                  # main CLI / scene scheduler / ffmpeg pipeline
   audio.py                   # AudioFeatures: load + interpolate + 3-band FFT
   analyze_audio.py           # vendored analyzer (beats, onsets, sections, …)
-  palette.py                 # VGA-style rainbow palette + cycling helpers
-  post.py                    # 10 post-production effects (mirror, tile, etc.)
+  palette.py                 # 8 VGA-style color palettes + cycling helpers
+  post.py                    # 26 post-production effects (mirror, tile, juggle, etc.)
   effects/
     __init__.py              # REGISTRY of all 32 effects
     _draw.py                 # shared line / polygon / circle primitives
@@ -425,10 +460,9 @@ dazzle-video-maker-py/       (repo root)
 - **More shape effects** — the v5.0 catalog added `balls`, `cones`,
   `corkscrew`, `cycloids`, `daisies`, `hilbert`, `tiles`, `wedges`, etc.
   These aren't in the v4.0 reference and would be additions rather than ports.
-- **Additional post effects** — 4 v5.0 modes were skipped as non-visual:
-  Juggle palette (palette-level), Kleenup (reset), Countdown (timer
-  overlay), Gas cloud (blur — meaningless on palette indices). These could
-  be revisited if the palette system evolves.
+- **Remaining v5.0 modes** — 3 modes were skipped as non-visual: Kleenup
+  (reset), Countdown (timer overlay), Gas cloud (blur — meaningless on
+  palette indices). Juggle palette was implemented as a post effect.
 - **Audio-reactive post parameters** — post effect params (fold count,
   twist amount, wave amplitude) could be driven by audio features for
   per-frame variation. Currently post params are static per render.
