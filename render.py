@@ -191,7 +191,7 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
 
     if mode == 'fixed':
         active = [(n, REGISTRY[n]()) for n in effect_names]
-        scene_post = [fixed_post] if fixed_post else []
+        scene_post = list(fixed_post) if fixed_post else []
     else:
         active = _new_set()
         scene_post = _pick_post()
@@ -373,9 +373,10 @@ def main():
     mode_grp.add_argument('--effects', nargs='+', default=None,
                           help='[fixed mode] exact list of effects to stack as one scene '
                                '(see full list in epilog)')
-    mode_grp.add_argument('--post', default=None, choices=post_names + [None],
-                          help='[fixed mode] post-production effect to apply '
-                               '(see full list in epilog)')
+    mode_grp.add_argument('--post', nargs='+', default=None,
+                          help='[fixed mode] post-production effect(s) to apply, in order. '
+                               'Multiple = stacked (e.g. --post mirror_quad wave). '
+                               'See full list in epilog.')
 
     rand_grp = p.add_argument_group('random-mode options')
     rand_grp.add_argument('--min', dest='min_fx', type=int, default=4,
@@ -464,6 +465,12 @@ def main():
             p.error('--effects is only valid with --mode fixed; for random mode use all 32')
         if args.min_fx > args.max_fx:
             p.error(f'--min ({args.min_fx}) must be <= --max ({args.max_fx})')
+
+    if args.post:
+        unknown_post = [p_ for p_ in args.post if p_ not in POST_REGISTRY]
+        if unknown_post:
+            valid = ', '.join(sorted(POST_REGISTRY.keys()))
+            p.error(f"unknown post effect(s): {', '.join(unknown_post)}\n  valid: {valid}")
 
     # Resolve profile path: explicit --profile wins; --no-profile disables; else derive.
     if args.no_profile:
