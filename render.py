@@ -116,7 +116,8 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
            mode='random', min_fx=4, max_fx=5, max_overlap=0,
            fixed_effects=None, profile_path=None,
            fixed_post=None, post_min=0, post_max=1,
-           post_kwargs=None):
+           post_kwargs=None,
+           exclude_effects=None, exclude_post=None):
     """Render audio to MP4.
 
     mode='random': rotate through all 32 effects; each scene holds min_fx..max_fx
@@ -144,6 +145,10 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
         effect_names = list(fixed_effects)
     else:
         effect_names = list(REGISTRY.keys())
+        if exclude_effects:
+            effect_names = [e for e in effect_names if e not in exclude_effects]
+            if not effect_names:
+                raise SystemExit('all effects excluded — nothing to render')
 
     width = W * scale
     height = H * scale
@@ -173,6 +178,8 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
 
     prev_names = []
     post_names = list(POST_REGISTRY.keys())
+    if exclude_post:
+        post_names = [p for p in post_names if p not in exclude_post]
 
     def _new_set():
         count = int(rng.integers(min_fx, max_fx + 1))
@@ -393,6 +400,12 @@ def main():
                                'have no post)')
     rand_grp.add_argument('--post-max', type=int, default=1,
                           help='maximum post effects per scene (default 1)')
+    rand_grp.add_argument('--exclude', nargs='+', default=None,
+                          help='exclude these shape effects from the random pool '
+                               '(e.g. --exclude diag1 diag2 diag3 diag4)')
+    rand_grp.add_argument('--exclude-post', nargs='+', default=None,
+                          help='exclude these post effects from the random pool '
+                               '(e.g. --exclude-post scroll wave)')
     # --min-scene / --max-scene / --no-sections removed from the CLI; scheduler
     # defaults are now hardcoded in render(). Uncomment if user control returns.
     # rand_grp.add_argument('--min-scene', type=float, default=2.5,
@@ -472,6 +485,18 @@ def main():
             valid = ', '.join(sorted(POST_REGISTRY.keys()))
             p.error(f"unknown post effect(s): {', '.join(unknown_post)}\n  valid: {valid}")
 
+    if args.exclude:
+        unknown_excl = [e for e in args.exclude if e not in REGISTRY]
+        if unknown_excl:
+            valid = ', '.join(sorted(REGISTRY.keys()))
+            p.error(f"unknown effect(s) in --exclude: {', '.join(unknown_excl)}\n  valid: {valid}")
+
+    if args.exclude_post:
+        unknown_excl_p = [p_ for p_ in args.exclude_post if p_ not in POST_REGISTRY]
+        if unknown_excl_p:
+            valid = ', '.join(sorted(POST_REGISTRY.keys()))
+            p.error(f"unknown post(s) in --exclude-post: {', '.join(unknown_excl_p)}\n  valid: {valid}")
+
     # Resolve profile path: explicit --profile wins; --no-profile disables; else derive.
     if args.no_profile:
         profile_path = None
@@ -496,7 +521,8 @@ def main():
            max_overlap=args.overlap, fixed_effects=args.effects,
            profile_path=profile_path,
            fixed_post=args.post, post_min=args.post_min, post_max=args.post_max,
-           post_kwargs=post_kwargs)
+           post_kwargs=post_kwargs,
+           exclude_effects=args.exclude, exclude_post=args.exclude_post)
 
 
 if __name__ == '__main__':
