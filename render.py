@@ -12,6 +12,7 @@ import sys
 import time
 
 import numpy as np
+from PIL import Image
 
 from audio import AudioFeatures
 from palette import rainbow_palette, cycle, PALETTES
@@ -45,6 +46,74 @@ def build_ffmpeg_cmd(audio_path, out_path, width, height, fps, crf, ffmpeg_bin='
 def scale_frame(rgb_small: np.ndarray, scale: int) -> np.ndarray:
     # Fast nearest-neighbour upscale with uint8 tiling
     return np.kron(rgb_small, np.ones((scale, scale, 1), dtype=np.uint8))
+
+
+def _anchor_xy(anchor: str, avail_w: int, avail_h: int) -> tuple[int, int]:
+    parts = set((anchor or 'center').split('-'))
+    if 'left' in parts:
+        x = 0
+    elif 'right' in parts:
+        x = avail_w
+    else:
+        x = avail_w // 2
+    if 'top' in parts:
+        y = 0
+    elif 'bottom' in parts:
+        y = avail_h
+    else:
+        y = avail_h // 2
+    return x, y
+
+
+def _resize_for_fit(img: Image.Image, fit: str) -> Image.Image:
+    fit = fit or 'cover'
+    iw, ih = img.size
+    if iw <= 0 or ih <= 0:
+        raise ValueError('background image has invalid dimensions')
+    if fit == 'stretch':
+        return img.resize((W, H), Image.Resampling.LANCZOS)
+    if fit == 'native':
+        scale = min(1.0, W / iw, H / ih)
+    elif fit == 'contain':
+        scale = min(W / iw, H / ih)
+    else:  # cover
+        scale = max(W / iw, H / ih)
+    tw = max(1, int(round(iw * scale)))
+    th = max(1, int(round(ih * scale)))
+    return img.resize((tw, th), Image.Resampling.LANCZOS)
+
+
+def _load_background_buffer(path: str, fit: str = 'cover',
+                            anchor: str = 'center',
+                            tile: bool = False) -> np.ndarray:
+    """Load an image into Dazzle's native 320x200 palette-index space."""
+    img = Image.open(path).convert('RGB')
+    canvas = Image.new('RGB', (W, H), (0, 0, 0))
+
+    if tile:
+        tile_img = _resize_for_fit(img, 'native')
+        tw, th = tile_img.size
+        for y in range(0, H, th):
+            for x in range(0, W, tw):
+                canvas.paste(tile_img, (x, y))
+    else:
+        fitted = _resize_for_fit(img, fit)
+        fw, fh = fitted.size
+        x, y = _anchor_xy(anchor, W - fw, H - fh)
+        canvas.paste(fitted, (x, y))
+
+    rgb = np.asarray(canvas, dtype=np.float32)
+    luma = rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114
+    return np.clip(np.rint(luma), 0, 255).astype(np.uint8)
+
+
+def _blend_background(buffer: np.ndarray, bg: np.ndarray, opacity: float):
+    opacity = max(0.0, min(1.0, float(opacity)))
+    if opacity >= 1.0:
+        buffer[:] = bg
+    elif opacity > 0.0:
+        mixed = buffer.astype(np.float32) * (1.0 - opacity) + bg.astype(np.float32) * opacity
+        buffer[:] = np.clip(np.rint(mixed), 0, 255).astype(np.uint8)
 
 
 def pick_effect(effect_names, rng, avoid_names=None):
@@ -119,6 +188,9 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
            post_kwargs_by_effect=None,
            exclude_effects=None, exclude_post=None,
            palette_name=None,
+           background_image=None, background_fit='cover',
+           background_anchor='center', background_opacity=1.0,
+           background_tile=False,
            ffmpeg_bin='ffmpeg', ffprobe_bin='ffprobe'):
     """Render audio to MP4.
 
@@ -142,9 +214,9 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
     np.random.seed(rng.integers(0, 2**31 - 1))
 
     if mode == 'fixed':
-        if not fixed_effects:
-            raise SystemExit('--mode fixed requires --effects')
-        effect_names = list(fixed_effects)
+        if not fixed_effects and not background_image:
+            raise SystemExit('--mode fixed requires --effects or --background-image')
+        effect_names = list(fixed_effects or [])
     else:
         effect_names = list(REGISTRY.keys())
         if exclude_effects:
@@ -176,6 +248,14 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
           f'min_scene={_min_scene_sec}s max_scene={_max_scene_sec}s')
 
     buffer = np.zeros((H, W), dtype=np.uint8)
+    background_buffer = None
+    if background_image:
+        background_buffer = _load_background_buffer(
+            background_image,
+            fit=background_fit,
+            anchor=background_anchor,
+            tile=background_tile,
+        )
     palette_names = list(PALETTES.keys())
 
     def _pick_palette():
@@ -273,6 +353,8 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
             nz = buffer > fade_amt
             buffer[nz] -= fade_amt
             buffer[~nz] = 0
+            if background_buffer is not None:
+                _blend_background(buffer, background_buffer, background_opacity)
 
             for _, eff in active:
                 eff.step(buffer, feats)
@@ -323,7 +405,14 @@ def render(audio_path, out_path, scale=6, fps=60, seed=None,
             'crf': crf,
             'seed': int(seed),
             'palette': palette_name or 'random',
-            **({'fixed_effects': list(fixed_effects),
+            'background': ({
+                'image': os.path.abspath(background_image),
+                'fit': background_fit,
+                'anchor': background_anchor,
+                'opacity': background_opacity,
+                'tile': bool(background_tile),
+            } if background_image else None),
+            **({'fixed_effects': list(fixed_effects or []),
                 'fixed_post': list(fixed_post) if fixed_post else []}
                if mode == 'fixed'
                else {'min_fx': min_fx, 'max_fx': max_fx, 'overlap': max_overlap,
@@ -461,6 +550,25 @@ def main():
     out_grp.add_argument('--ffprobe', default='ffprobe', dest='ffprobe_bin',
                          help='path to ffprobe binary (default: ffprobe on PATH)')
 
+    bg_grp = p.add_argument_group('background image')
+    bg_grp.add_argument('--background-image', default=None,
+                        help='image path drawn into the 320x200 Dazzle buffer '
+                             'before visual and post effects')
+    bg_grp.add_argument('--background-fit', default='cover',
+                        choices=['cover', 'contain', 'stretch', 'native'],
+                        help='how to fit the background image into 320x200 '
+                             '(default cover)')
+    bg_grp.add_argument('--background-anchor', default='center',
+                        choices=['center', 'top', 'bottom', 'left', 'right',
+                                 'top-left', 'top-right', 'bottom-left',
+                                 'bottom-right'],
+                        help='placement anchor for non-stretched backgrounds')
+    bg_grp.add_argument('--background-opacity', type=float, default=1.0,
+                        help='background blend opacity, 0..1 (default 1)')
+    bg_grp.add_argument('--background-tile', action='store_true',
+                        help='tile the image across the 320x200 buffer; uses '
+                             'native size capped to the render buffer')
+
     prof_grp = p.add_argument_group('profile')
     prof_grp.add_argument('--profile', default=None,
                           help='path to write render profile JSON (default: '
@@ -549,9 +657,9 @@ def main():
 
     # Mode-specific constraint validation
     if args.mode == 'fixed':
-        if not args.effects:
-            p.error('--mode fixed requires --effects NAME [NAME ...]')
-        unknown = [e for e in args.effects if e not in REGISTRY]
+        if not args.effects and not args.background_image:
+            p.error('--mode fixed requires --effects NAME [NAME ...] or --background-image PATH')
+        unknown = [e for e in (args.effects or []) if e not in REGISTRY]
         if unknown:
             valid = ', '.join(sorted(REGISTRY.keys()))
             p.error(f"unknown effect name(s): {', '.join(unknown)}\n  valid: {valid}")
@@ -578,6 +686,9 @@ def main():
         if unknown_excl_p:
             valid = ', '.join(sorted(POST_REGISTRY.keys()))
             p.error(f"unknown post(s) in --exclude-post: {', '.join(unknown_excl_p)}\n  valid: {valid}")
+
+    if args.background_image and not os.path.exists(args.background_image):
+        p.error(f'background image not found: {args.background_image}')
 
     # Resolve profile path: explicit --profile wins; --no-profile disables; else derive.
     if args.no_profile:
@@ -626,6 +737,11 @@ def main():
            post_kwargs_by_effect=_post_kwargs_by_effect,
            exclude_effects=args.exclude, exclude_post=args.exclude_post,
            palette_name=args.palette,
+           background_image=args.background_image,
+           background_fit=args.background_fit,
+           background_anchor=args.background_anchor,
+           background_opacity=args.background_opacity,
+           background_tile=args.background_tile,
            ffmpeg_bin=args.ffmpeg_bin, ffprobe_bin=args.ffprobe_bin)
 
 

@@ -101,6 +101,23 @@ Available palettes: `rainbow`, `fire`, `ice`, `electric`, `neon`, `grayscale`,
 `ocean`, `lava`. In random mode each scene picks a palette automatically.
 In fixed mode use `--palette NAME` to select one (defaults to rainbow).
 
+### Background images
+
+```
+# Draw an image into the native 320x200 buffer before visuals and post effects
+python3 render.py song.wav bg.mp4 --mode fixed --effects hexagon spiral \
+    --background-image /home/mastergray/images/background.png \
+    --background-fit cover --background-anchor center --background-opacity 1
+
+# Tile a small image across the buffer
+python3 render.py song.wav tiled-bg.mp4 --mode fixed --effects boxes \
+    --background-image /home/mastergray/images/tile.png --background-tile
+```
+
+Backgrounds are converted into Dazzle's palette-index buffer, so exact source
+colors are intentionally stylized. Dazzle visual effects draw over the image;
+Dazzle post effects transform the combined buffer.
+
 ### More post effects
 
 ```
@@ -261,6 +278,18 @@ python3 build_effects_guide.py --output-dir ./effects-guide
 - `--crf N` — H.264 quality; lower is bigger/sharper (default 23)
 - `--seed N` — RNG seed; omit for per-run randomness
 - `--analysis PATH` — pre-computed audio analysis JSON
+
+**Background image**
+- `--background-image PATH` — draw an image into the 320×200 buffer before
+  visual and post effects
+- `--background-fit {cover,contain,stretch,native}` — image fitting mode
+  (default `cover`)
+- `--background-anchor NAME` — placement for non-stretched images:
+  `center`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`,
+  `bottom-left`, or `bottom-right`
+- `--background-opacity N` — blend amount from 0 to 1
+- `--background-tile` — repeat the image across the buffer using native size
+  capped to 320×200
 
 **Profile**
 - `--profile PATH` — custom profile path (default `<output>.profile.json`)
